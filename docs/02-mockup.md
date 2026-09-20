@@ -16,16 +16,17 @@ The mockups show the final visual appearance of ResortBook across both mobile an
 ![Mobile Add Reservation](assets/Mobile%20-%20Add%20Reservation.png)
 
 ### Reservation List
-
-*(Embed the Reservation List mockup from `assets/` here.)*
+![Desktop Reservation List](assets/Desktop%20-%20Reservation%20List.png)
+![Mobile Reservation List](assets/Mobile%20-%20Reservation%20List.png)
 
 ### Reservation Details
-
-*(Embed the Reservation Details mockup from `assets/` here.)*
+![Desktop Reservation Details](assets/Desktop%20-%20Reservation%20Details.png)
+![Mobile Reservation Details](assets/Mobile%20-%20Reservation%20Details.png)
 
 ### Calendar
 
-*(Embed the Calendar mockup from `assets/` here.)*
+![Mobile Calendar View](assets/Mobile%20-%20Calendar%20View.png)
+![Desktop Calendar View](assets/Desktop%20-%20Calendar%20View.png)
 
 ## Wireframes
 
@@ -33,17 +34,13 @@ The wireframes show the earlier box-and-label layouts used to plan the placement
 
 ### Screen Flow
 
-*(Embed the ResortBook flow diagram from `assets/` here.)*
+[ResortBook Wireframes - Figma](https://www.figma.com/design/NcC7oeqCO9Esku6BNnuzsB/ResortBook-Final-Project-Wireframe?node-id=0-1&p=f&t=xvVS1cDNpMQcsNnP-0)
 
 **Dashboard / Home**
 → **Add Reservation**
 → **Reservation List**
 → **Reservation Details**
 → **Calendar**
-
-### Wireframe Sketches
-
-*(Embed the wireframe sketches from `assets/` here.)*
 
 ## Screens
 
