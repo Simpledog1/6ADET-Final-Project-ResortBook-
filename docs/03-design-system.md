@@ -4,8 +4,6 @@ The ResortBook design system defines the visual and interaction standards used t
 
 ![Design system](assets/ResortBook_Design_System.png)
 
-[Design system (PDF)](assets/ResortBook_Design_System.pdf)
-
 ## Palette
 
 | Role               | Color                     | Used For                                                                            |
