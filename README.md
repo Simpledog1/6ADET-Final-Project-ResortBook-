@@ -116,4 +116,4 @@ it.
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). Change it if you want different terms.
+MIT, see [LICENSE](LICENSE). Change it if you want different terms..
