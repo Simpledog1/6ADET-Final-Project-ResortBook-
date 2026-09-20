@@ -17,40 +17,48 @@ Today, these staff members may manually track room availability using paper desk
    * Displays high-level information such as available rooms, active check-ins, and reservation statistics.
    * Uses Flutter widgets such as `Card`, `GridView.builder`, `ListView.builder`, and `FutureBuilder`.
 
-2. **Room Management Screen**
-
-   * Allows staff to view rooms and modify room information such as room type, pricing, capacity, and cleaning status.
-   * Uses `ListView.builder`, `TextField`, `showDialog`, and `FloatingActionButton`.
-
-3. **New Booking Form Screen**
+2. **Add Reservation Screen**
 
    * Allows staff to enter guest information, select a room, and specify check-in and check-out dates.
    * Includes form validation to prevent invalid or conflicting bookings.
    * Uses `Form`, `TextFormField`, `DropdownButtonFormField`, and navigation.
 
-4. **Calendar View Screen**
-
-   * Provides a visual overview of reservations across dates.
-   * Reservations can be displayed according to their booking status.
-   * Uses `TableCalendar` or a custom calendar layout, along with `Card` and `GestureDetector`.
-
-5. **Reservation Directory Screen**
+3. **Reservation List Screen**
 
    * Provides a searchable list of active and historical reservations.
    * Allows staff to quickly find guest and booking information.
    * Uses `ListView.builder`, search filtering, and `Card`.
 
-The core version of the application focuses on these five features so that they can be completed, tested, and demonstrated reliably within the remaining term.
+4. **Reservation Details Screen**
+
+   * Displays detailed information about a selected reservation.
+   * Shows guest information, booking dates, assigned room, and reservation status.
+   * Uses `Card`, `Text`, `FutureBuilder`, and `Navigator.pop`.
+
+5. **Calendar Screen**
+
+   * Provides a visual overview of reservations across dates.
+   * Reservations can be displayed according to their booking status.
+   * Uses `TableCalendar` or a custom calendar layout, along with `Card` and `GestureDetector`.
+
+The core version of the application focuses on these five screens so that they can be completed, tested, and demonstrated reliably within the remaining term.
+
+The current screen flow is:
+
+**Dashboard → Add Reservation → Reservation List → Reservation Details → Calendar**
+
+There is no separate Room Management screen in the current application.
 
 ## Out of scope, and why
 
 The following features are outside the core scope of the project:
 
 * **Real-time multi-device synchronization:** Although PocketBase provides real-time capabilities, implementing full multi-device synchronization and conflict-resolution logic is outside the core MVP because of the additional backend complexity and development time. It remains a stretch goal.
-* **Live chat:** This was included in the preliminary proposal but was removed because it does not directly support the core room and reservation management workflow and would require additional development time.
+* **Live chat:** This was included in the preliminary proposal but was removed because it does not directly support the core reservation-management workflow and would require additional development time.
 * **Automated notifications:** Automated guest or staff notifications were removed from the MVP to keep the project focused on the essential reservation-management workflow.
 * **Guest accounts and online payments:** ResortBook is an internal front-desk management application rather than a guest-facing booking platform.
 * **PDF booking receipt export:** PDF confirmation/receipt generation using the `pdf` and `printing` packages is a stretch goal. The core reservation system does not depend on it.
+* **Separate Room Management screen:** Room management is not included as a dedicated screen in the current MVP. Room information is still stored in the database because it is needed for room assignment, availability information, and reservations.
 
 ## Data the app remembers, and where it is saved
 
@@ -67,7 +75,7 @@ The application stores approximately 20–40 room records and around 50–80 res
 * `pricePerNight` — double
 * `cleaningStatus` — String
 
-These records are stored in the PocketBase **rooms** collection.
+These records are stored in the PocketBase **rooms** collection. Although there is no dedicated Room Management screen, this information is still required by the reservation and dashboard features.
 
 ### Reservation collection
 
@@ -107,7 +115,9 @@ A one-hour technical spike was completed using PocketBase. The backend was run l
 
 ## Changes since the last version
 
-**September 20, 2026 — Core scope reduced:** The proposal was changed from six major features to five core features. Real-time multi-device synchronization was moved to a stretch goal, while live chat and automated notifications were removed from the core scope. This was based on the development time required for the main screens and the need to keep the project achievable within the remaining term.
+**September 20, 2026 — Core scope reduced:** The proposal was changed from six major features to five current screens. Real-time multi-device synchronization was moved to a stretch goal, while live chat and automated notifications were removed from the core scope. This was based on the development time required for the main screens and the need to keep the project achievable within the remaining term.
+
+**September 20, 2026 — Room Management screen removed:** The separate Room Management screen was removed from the proposal because it is not part of the current Figma designs or application flow. Room data remains in the database because the reservation and dashboard features still depend on room information.
 
 **September 20, 2026 — Persistence decision made:** The project previously had an undecided choice between local SQLite and Firebase. PocketBase was selected after a one-hour technical spike successfully connected a Flutter test application to a locally running PocketBase backend and fetched a record. This provides a lightweight backend while allowing room and reservation data to be shared between devices when the backend is available.
 
