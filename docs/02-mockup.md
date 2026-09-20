@@ -25,12 +25,8 @@ The mockups show the final visual appearance of ResortBook across both mobile an
 
 ### Calendar
 
-![Mobile Calendar View](assets/Mobile%20-%20Calendar%20View.png)
 ![Desktop Calendar View](assets/Desktop%20-%20Calendar%20View.png)
-
-## Wireframes
-
-The wireframes show the earlier box-and-label layouts used to plan the placement of interface elements and the navigation between screens.
+![Mobile Calendar View](assets/Mobile%20-%20Calendar%20View.png)
 
 ### Screen Flow
 
