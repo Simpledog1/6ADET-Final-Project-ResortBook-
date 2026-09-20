@@ -8,11 +8,12 @@ The mockups show the final visual appearance of ResortBook across both mobile an
 
 ### Dashboard / Home
 
-/docs/assets/https://github.com/Simpledog1/6ADET-Final-Project-ResortBook-/blob/main/docs/assets/Desktop%20-%20Dashboard.png
+![Desktop Dashboard](assets/Desktop%20-%20Dashboard.png)
+![Mobile Dashboard](assets/Mobile%20-%20Dashboard.png)
 
 ### Add Reservation
-
-*(Embed the Add Reservation mockup from `assets/` here.)*
+![Desktop Add Reservation](assets/Desktop%20-%20Add%20Reservation.png)
+![Mobile Add Reservation](assets/Mobile%20-%20Add%20Reservation.png)
 
 ### Reservation List
 
