@@ -1,6 +1,6 @@
 # Weekly reports
 
-## Week 1 (September 14 to September 20, 2026)
+## Week 1
 
 **Done this week**
 
