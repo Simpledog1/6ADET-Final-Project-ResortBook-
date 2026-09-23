@@ -1,5 +1,11 @@
 **Week 1:** Finals, September 23, 2026
 
+**Phase 1 — Project Foundation
+Setting up the initial Flutter application architecture before any core features are built. This includes creating the fundamental folder structure, defining the global Material 3 ColorScheme and TextTheme, establishing the base 8-pixel spacing constants, and building the main.dart entry point to ensure the application perfectly matches the visual design system.   
+
+**Phase 2 — Database Connection
+Integrating the backend data layer so the application can save and load information. This involves running the local PocketBase server, creating the rooms and reservations database collections, defining the Dart data models, and writing the service file to establish communication between the Flutter app and the database.
+
 **My goal this week**
 Set up the Flutter development environment on Linux, establish the core project architecture for the ResortBook application, and complete the visual foundation (Phase 1) and database connection (Phase 2).
 
