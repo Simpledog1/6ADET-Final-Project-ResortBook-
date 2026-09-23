@@ -43,3 +43,25 @@
 * Continue testing the main navigation and responsive layouts.
 * Start implementing date-range overlap validation.
 * Fix any Flutter errors encountered during integration.
+
+**Week of:** September 23, 2026
+
+**What changed this week**
+* Corrected the project scope to focus strictly on a mobile-only application[cite: 1, 3].
+* Completed Phase 1 (Visual Foundation) by writing the `main.dart` entry point, the Material 3 `app_theme.dart` (seeded with the primary blue #1E3A8A), and the 8px-based `app_spacing.dart` file[cite: 1].
+* Established the core `lib/` folder structure (models, screens, services, theme, widgets).
+* Drafted the required `README.md` documentation and `SECURITY-CHECKLIST.md`.
+
+**Why**
+* Establishing the theme and spacing engine first ensures the application perfectly matches the Figma design system without having to hardcode colors and padding across every individual screen[cite: 1]. 
+* The folder structure prepares the codebase for the core reservation features and database integration[cite: 3].
+
+**What broke or what I got stuck on**
+* Severe Wi-Fi issues completely blocked my development environment setup. My network connection kept dropping at 85kbps and timing out (`curl 56` and `early EOF` errors) when trying to clone the Flutter SDK repository to my Linux laptop. 
+* Because I couldn't install Flutter or the PocketBase executable, I was stuck writing offline Dart code and couldn't compile the app, run the Android emulator, or generate the required screenshots for the documentation. 
+
+**What is left**
+* Successfully downloading and installing Flutter and PocketBase once my Wi-Fi stabilizes.
+* Phase 2: Configuring the local PocketBase collections (`rooms` and `reservations`) and establishing the backend connection[cite: 3].
+* Phases 3 through 7: Building the actual UI for the 5 core screens (Dashboard, Add Reservation, Reservation List, Reservation Details, and Calendar)[cite: 2, 3].
+* Implementing the date-overlap validation logic to prevent double-bookings[cite: 3].
