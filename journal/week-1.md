@@ -1,4 +1,4 @@
-**Week 1 of:** Finals, September 23, 2026
+**Week 1:** Finals, September 23, 2026
 
 **My goal this week**
 Set up the Flutter development environment on Linux, establish the core project architecture for the ResortBook application, and complete the visual foundation (Phase 1) and database connection (Phase 2)[cite: 3].
