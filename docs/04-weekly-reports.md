@@ -44,7 +44,7 @@
 * Start implementing date-range overlap validation.
 * Fix any Flutter errors encountered during integration.
 
-## Week 1 of: Finals, September 23, 2026
+## Week 1: Finals, September 23, 2026
 
 **What changed this week**
 * Corrected the project scope to focus strictly on a mobile-only application[cite: 1, 3].
