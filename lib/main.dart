@@ -1,4 +1,3 @@
-// Location: lib/main.dart
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 
@@ -14,7 +13,7 @@ class ResortBookApp extends StatelessWidget {
     return MaterialApp(
       title: 'ResortBook',
       theme: AppTheme.lightTheme,
-      // We will replace this placeholder with the actual Dashboard screen in Phase 3
+      // Replace this when its phase 3
       home: const PlaceholderDashboard(), 
       debugShowCheckedModeBanner: false,
     );
