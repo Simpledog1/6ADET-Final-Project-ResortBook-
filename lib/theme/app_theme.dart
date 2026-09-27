@@ -7,13 +7,13 @@ class AppTheme {
         seedColor: const Color(0xFF1E3A8A),
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: const Color(0xFFF8FAFC), // Main background
+      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
       useMaterial3: true,
       textTheme: const TextTheme(
         headlineSmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF1E293B), // Dark charcoal color
+          color: Color(0xFF1E293B),
         ),
         titleMedium: TextStyle(
           fontSize: 18,

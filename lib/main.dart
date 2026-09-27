@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:device_preview/device_preview.dart';
 import 'theme/app_theme.dart';
 
 void main() {
-  runApp(const ResortBookApp());
+  runApp(
+    DevicePreview(
+      enabled: true, // Enables the viewport toggler UI
+      builder: (context) => const ResortBookApp(),
+    ),
+  );
 }
 
 class ResortBookApp extends StatelessWidget {
@@ -13,16 +19,17 @@ class ResortBookApp extends StatelessWidget {
     return MaterialApp(
       title: 'ResortBook',
       theme: AppTheme.lightTheme,
-      // Replace this when its phase 3
-      home: const PlaceholderDashboard(), 
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
+      home: const ResponsivePlaceholder(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-// Temporary widget just to verify the theme is working
-class PlaceholderDashboard extends StatelessWidget {
-  const PlaceholderDashboard({super.key});
+// Temporary widget to verify responsive logic before building Phase 3
+class ResponsivePlaceholder extends StatelessWidget {
+  const ResponsivePlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +39,20 @@ class PlaceholderDashboard extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body: Center(
-        child: Text(
-          'Ready for Phase 2',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // If width > 800, we apply desktop rules. Otherwise, mobile.
+          final isDesktop = constraints.maxWidth > 800;
+
+          return Center(
+            child: Text(
+              isDesktop
+                  ? 'Desktop Viewpoint Active (> 800px)'
+                  : 'Mobile Viewport Active',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          );
+        },
       ),
     );
   }
