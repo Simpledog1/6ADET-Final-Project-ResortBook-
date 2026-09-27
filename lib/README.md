@@ -1,44 +1,50 @@
-## Documentation Update
+# ResortBook Documentation Update
+
 ## 1. Overview
-ResortBook is a mobile and desktop front-desk reservation management application built with Flutter[cite: 3]. It is designed specifically for internal managers and staff at small-to-medium independent resorts to accurately track room inventory and active guest bookings, replacing error-prone paper logbooks.
+ResortBook is a cross-platform (mobile and desktop) front-desk reservation management application built with Flutter. It is designed specifically for internal managers and staff at small-to-medium independent resorts to accurately track room inventory and active guest bookings, replacing error-prone paper logbooks.
 
 ## 2. Setup and installation
 To set up this project locally from scratch:
 
-* **Requirements:** Built using the Flutter Stable channel on a Linux development environment.
+* **Requirements:** Built using the Flutter Stable channel on a Windows 11 development environment (x64 architecture).
 * **Get the code:** Clone this repository to your local machine using `git clone <your-repository-url>`.
 * **Install dependencies:** Navigate into the project folder and run `flutter pub get`.
-* **Configuration:** Currently None. The application is in Phase 1 (Visual Foundation). The PocketBase backend connection has not yet been integrated due to local network limitations, so no API keys, environment variables, or server URLs are required to run the current build.
+* **Database Configuration:** This application requires a local PocketBase backend. 
+  1. Download the `windows_amd64.zip` executable from PocketBase.
+  2. Extract it (e.g., to your G: drive) and run `.\pocketbase serve` in PowerShell.
+  3. Ensure the server is running at `http://127.0.0.1:8090`.
+  4. Create the `rooms` and `reservations` collections and set their API rules to public/unlocked for local testing.
 
 ## 3. How to run it
-Ensure you have an Android emulator running or a physical mobile device connected, as this application is optimized strictly for mobile viewports.
+Ensure your PocketBase server is running in a background terminal before launching the Flutter app. 
 
 Run the following command in your terminal:
 `flutter run`
 
-**What you should see:** Because the project is currently at the Phase 1 milestone, the app will launch a placeholder Dashboard screen. You will see a dark blue App Bar utilizing the Material 3 seed color #1E3A8A on an off-white background. This confirms the custom theme and spacing engines are working correctly.
+**What you should see:** The app will launch with the `DevicePreview` wrapper active, allowing you to instantly toggle between mobile and desktop viewport constraints. It will boot directly into the responsive Dashboard screen, displaying your active database records in a dynamic grid alongside either a Bottom Navigation Bar (mobile) or a side Navigation Rail (desktop). 
 
 ## 4. Features and usage
-Currently, the application contains the core visual architecture and design system implementation.
+Currently, the application contains the core visual architecture, database connection, and primary reservation flow.
 
-* **Design System Engine:** The app globally enforces a custom Material 3 light theme, specific type scales, and an 8px base spacing system to ensure uniform component padding.
-* **Routing:** The application successfully boots and routes to a placeholder `DashboardScreen`.
-* *Note: Core reservation features (forms, calendar, database sync) are pending implementation in subsequent phases once network blockers are resolved.*
+* **Design System Engine:** The app globally enforces a custom Material 3 light theme (seeded with #1E3A8A), specific type scales, and an 8px base spacing system to ensure uniform component padding.
+* **Responsive Layout:** The application utilizes `LayoutBuilder` to dynamically adapt the UI structure based on the active screen width.
+* **Add Reservation & Validation:** Users can assign rooms and select dates. The form includes strict client-side validation logic that queries existing database records and actively blocks submission if the selected dates overlap with an existing booking: `(New Check-In < Existing Check-Out) AND (New Check-Out > Existing Check-In)`.
+* **Database Sync:** Successfully connected to the local PocketBase backend using the Dart SDK.
 
 ## 5. Project structure
-The `lib/` directory is currently structured to support the Phase 1 visual foundation, with folders prepared for the upcoming phases:
+The `lib/` directory is structured to support the cross-platform architecture and separation of concerns:
 
-* `lib/main.dart` — The application entry point that initializes the app and applies the global theme.
+* `lib/main.dart` — The application entry point that initializes the app, `DevicePreview`, and global theme.
 * `lib/theme/app_theme.dart` — Contains the Material 3 ColorScheme and TextTheme configurations.
 * `lib/theme/app_spacing.dart` — Holds the strict 8px-based spacing constants used for margins and padding.
-* `lib/models/` — *(Prepared)* Will hold Dart data models (e.g., Room, Reservation).
-* `lib/screens/` — *(Prepared)* Will hold the 5 primary mobile screens: Dashboard, Add Reservation, Reservation List, Reservation Details, and Calendar.
-* `lib/services/` — *(Prepared)* Will hold the PocketBase backend connection logic.
+* `lib/models/` — Contains Dart data models mapping to the database (`room.dart`, `reservation.dart`).
+* `lib/screens/` — Contains the active UI screens (`dashboard_screen.dart`, `add_reservation_screen.dart`), alongside placeholders for upcoming phases.
+* `lib/services/` — Contains `pocketbase_service.dart` for handling the backend connection logic.
 * `lib/widgets/` — *(Prepared)* Will hold reusable UI components like the Reservation Card and Status Badge.
 
 ## 6. Screenshots
-*(Screenshots are unavailable as of this update due to Wi-Fi issues preventing the installation of the Flutter SDK and PocketBase).*
+*(Screenshots can now be generated using the DevicePreview UI to capture both the desktop dashboard and the mobile Add Reservation form. Add them to the docs/assets folder.)*
 
 ## 7. Known issues and next steps
-* **Known Issues:** Development is currently paused at Phase 1. Severe local network timeout issues (curl 56 / 85kbps dropouts) on the Linux development machine prevented the installation of the Flutter engine and the local PocketBase server.
-* **Next Steps:** Once network stability is restored, the immediate next step is Phase 2: spinning up the local PocketBase executable, creating the rooms and reservations collections, and verifying the Flutter-to-backend connection. After that, we will build the actual Dashboard UI and the Add Reservation form validation logic.
+* **Known Issues:** The "List" and "Calendar" tabs currently display empty placeholder text, as their respective UI screens have not yet been built.
+* **Next Steps:** The immediate next step is Phase 5: replacing the placeholder text with the actual searchable `Reservation List` screen to display live data from PocketBase. Following that, we will build the `Reservation Details` view (Phase 6) and the visual `Calendar` interface (Phase 7).
