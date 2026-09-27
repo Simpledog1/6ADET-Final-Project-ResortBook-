@@ -1,5 +1,7 @@
+// Location: lib/screens/dashboard_screen.dart
 import 'package:flutter/material.dart';
 import '../theme/app_spacing.dart';
+import 'add_reservation_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -11,11 +13,17 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
+  final List<Widget> _screens = [
+    const DashboardContent(),
+    const AddReservationScreen(),
+    const Center(child: Text('List Screen - Phase 5')),
+    const Center(child: Text('Calendar Screen - Phase 7')),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Switch to desktop layout if width exceeds 800px
         if (constraints.maxWidth > 800) {
           return _buildDesktopLayout();
         }
@@ -31,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body: _buildDashboardContent(),
+      body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
@@ -86,17 +94,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
-              body: _buildDashboardContent(),
+              body: _screens[_selectedIndex],
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  // The actual content of the dashboard
-  Widget _buildDashboardContent() {
-    // SingleChildScrollView allows the screen to scroll if the content overflows
+// Extracted into its own separate class outside of _DashboardScreenState
+class DashboardContent extends StatelessWidget {
+  const DashboardContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -107,14 +119,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: AppSpacing.lg),
-          // Wrap automatically moves items to the next line if they don't fit
           Wrap(
             spacing: AppSpacing.md,
             runSpacing: AppSpacing.md,
             children: [
-              _buildSummaryCard('Rooms Available', '12', Icons.meeting_room),
-              _buildSummaryCard('Active Bookings', '4', Icons.book_online),
-              _buildSummaryCard('Pending Clean', '2', Icons.cleaning_services),
+              _buildSummaryCard(
+                context,
+                'Rooms Available',
+                '12',
+                Icons.meeting_room,
+              ),
+              _buildSummaryCard(
+                context,
+                'Active Bookings',
+                '4',
+                Icons.book_online,
+              ),
+              _buildSummaryCard(
+                context,
+                'Pending Clean',
+                '2',
+                Icons.cleaning_services,
+              ),
             ],
           ),
         ],
@@ -122,9 +148,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon) {
+  Widget _buildSummaryCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+  ) {
     return SizedBox(
-      width: 220, // Fixed width ensures uniform cards on desktop and mobile
+      width: 220,
       child: Card(
         elevation: 2,
         child: Padding(
