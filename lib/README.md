@@ -6,7 +6,7 @@ ResortBook is a cross-platform (mobile and desktop) front-desk reservation manag
 ## 2. Setup and installation
 To set up this project locally from scratch:
 
-* **Requirements:** Built using the Flutter Stable channel on a Windows 11 development environment (x64 architecture).
+* **Requirements:** Built using the Flutter Stable channel on a Windows 11 development environment (x64 architecture). Compiling the native desktop application requires **Visual Studio 2022 Community** with the **Desktop development with C++** workload installed, and Windows Developer Mode enabled.
 * **Get the code:** Clone this repository to your local machine using `git clone <your-repository-url>`.
 * **Install dependencies:** Navigate into the project folder and run `flutter pub get`.
 * **Database Configuration:** This application requires a local PocketBase backend. 
@@ -19,22 +19,23 @@ To set up this project locally from scratch:
 Ensure your PocketBase server is running in a background terminal before launching the Flutter app. 
 
 Run the following command in your terminal:
-`flutter run`
+`flutter run -d windows`
 
-**What you should see:** The app will launch with the `DevicePreview` wrapper active, allowing you to instantly toggle between mobile and desktop viewport constraints. It will boot directly into the responsive Dashboard screen, displaying your active database records in a dynamic grid alongside either a Bottom Navigation Bar (mobile) or a side Navigation Rail (desktop). 
+**What you should see:** The app will compile as a native Windows desktop application and launch with the `DevicePreview` wrapper active, allowing you to instantly toggle between mobile and desktop viewport constraints. It will boot directly into the responsive Dashboard screen, displaying your active database records in a dynamic grid alongside either a Bottom Navigation Bar (mobile) or a side Navigation Rail (desktop). 
 
 ## 4. Features and usage
-Currently, the application contains the core visual architecture, database connection, and primary reservation flow.
+Currently, the application contains the core visual architecture, database connection, primary reservation flow, and integrated documentation tooling.
 
 * **Design System Engine:** The app globally enforces a custom Material 3 light theme (seeded with #1E3A8A), specific type scales, and an 8px base spacing system to ensure uniform component padding.
 * **Responsive Layout:** The application utilizes `LayoutBuilder` to dynamically adapt the UI structure based on the active screen width.
 * **Add Reservation & Validation:** Users can assign rooms and select dates. The form includes strict client-side validation logic that queries existing database records and actively blocks submission if the selected dates overlap with an existing booking: `(New Check-In < Existing Check-Out) AND (New Check-Out > Existing Check-In)`.
 * **Database Sync:** Successfully connected to the local PocketBase backend using the Dart SDK.
+* **Automated Screenshot Export:** The application utilizes `device_preview_screenshot` running natively on Windows to capture accurately framed viewport mockups and save them directly to the local file system.
 
 ## 5. Project structure
 The `lib/` directory is structured to support the cross-platform architecture and separation of concerns:
 
-* `lib/main.dart` — The application entry point that initializes the app, `DevicePreview`, and global theme.
+* `lib/main.dart` — The application entry point that initializes the app, `DevicePreview`, screenshot export logic, and global theme.
 * `lib/theme/app_theme.dart` — Contains the Material 3 ColorScheme and TextTheme configurations.
 * `lib/theme/app_spacing.dart` — Holds the strict 8px-based spacing constants used for margins and padding.
 * `lib/models/` — Contains Dart data models mapping to the database (`room.dart`, `reservation.dart`).
@@ -43,6 +44,7 @@ The `lib/` directory is structured to support the cross-platform architecture an
 * `lib/widgets/` — *(Prepared)* Will hold reusable UI components like the Reservation Card and Status Badge.
 
 ## 6. Screenshots
+
 ## Cross-Platform Dashboard Layout
 The ResortBook dashboard utilizes `LayoutBuilder` to dynamically reflow the Material Design 3 interface between standard desktop and iPhone 16 viewports.
 
