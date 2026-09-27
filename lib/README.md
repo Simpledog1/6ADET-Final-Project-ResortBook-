@@ -43,11 +43,10 @@ The `lib/` directory is structured to support the cross-platform architecture an
 * `lib/widgets/` — *(Prepared)* Will hold reusable UI components like the Reservation Card and Status Badge.
 
 ## 6. Screenshots
-![Mobile Dashboard](docs/assets/Documentation%20Screenshots/mobile_dashboard.png)
-![Mobile Validation](docs/assets/Documentation%20Screenshots/mobile_add_reservation_validation.png)
-![Desktop Dashboard](docs/assets/Documentation%20Screenshots/desktop_dashboard.png)
-![Desktop Validation](docs/assets/Documentation%20Screenshots/desktop_add_reservation_validation.png)
-
+![Mobile Dashboard](../docs/assets/Documentation%20Screenshots/mobile_dashboard.png)
+![Mobile Validation](../docs/assets/Documentation%20Screenshots/mobile_add_reservation_validation.png)
+![Desktop Dashboard](../docs/assets/Documentation%20Screenshots/desktop_dashboard.png)
+![Desktop Validation](../docs/assets/Documentation%20Screenshots/desktop_add_reservation_validation.png)
 
 ## 7. Known issues and next steps
 * **Known Issues:** The "List" and "Calendar" tabs currently display empty placeholder text, as their respective UI screens have not yet been built.
