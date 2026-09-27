@@ -66,7 +66,7 @@
 * Phases 3 through 7: Building the actual UI for the 5 core screens (Dashboard, Add Reservation, Reservation List, Reservation Details, and Calendar).
 * Implementing the date-overlap validation logic to prevent double-bookings.
 
-##Week 2: Finals, September 27, 2026
+## Week 2: Finals, September 27, 2026
 
 **What changed this week**
 * Restored the project scope back to cross-platform, explicitly supporting both mobile (393 × 852 px) and desktop (1440 × 1024 px) viewports.
