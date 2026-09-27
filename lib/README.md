@@ -43,9 +43,24 @@ The `lib/` directory is structured to support the cross-platform architecture an
 * `lib/widgets/` — *(Prepared)* Will hold reusable UI components like the Reservation Card and Status Badge.
 
 ## 6. Screenshots
+## Cross-Platform Dashboard Layout
+The ResortBook dashboard utilizes `LayoutBuilder` to dynamically reflow the Material Design 3 interface between standard desktop and iPhone 16 viewports.
+
+### Mobile Viewport
 ![Mobile Dashboard](../docs/assets/Documentation%20Screenshots/mobile_dashboard.png)
-![Mobile Validation](../docs/assets/Documentation%20Screenshots/mobile_add_reservation_validation.png)
+
+### Desktop Viewport
 ![Desktop Dashboard](../docs/assets/Documentation%20Screenshots/desktop_dashboard.png)
+
+---
+
+## Client-Side Reservation Validation
+The add reservation screen implements strict date-overlap logic to block double-bookings prior to database submission.
+
+### Mobile Validation
+![Mobile Validation](../docs/assets/Documentation%20Screenshots/mobile_add_reservation_validation.png)
+
+### Desktop Validation
 ![Desktop Validation](../docs/assets/Documentation%20Screenshots/desktop_add_reservation_validation.png)
 
 ## 7. Known issues and next steps
