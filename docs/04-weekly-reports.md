@@ -65,3 +65,28 @@
 * Phase 2: Configuring the local PocketBase collections (`rooms` and `reservations`) and establishing the backend connection.
 * Phases 3 through 7: Building the actual UI for the 5 core screens (Dashboard, Add Reservation, Reservation List, Reservation Details, and Calendar).
 * Implementing the date-overlap validation logic to prevent double-bookings.
+
+**Week 2: Finals, September 27, 2026**
+
+**What changed this week**
+* Restored the project scope back to cross-platform, explicitly supporting both mobile (393 × 852 px) and desktop (1440 × 1024 px) viewports.
+* Completed Phase 2 (PocketBase Connection): Successfully configured the local database on the G: drive, created the `rooms` and `reservations` collections with relational mapping, and built the corresponding Dart models.
+* Completed Phase 3 (Dashboard): Built the responsive dashboard UI using `LayoutBuilder` to automatically switch between a mobile `BottomNavigationBar` and a desktop `NavigationRail`.
+* Completed Phase 4 (Add Reservation): Created the form for capturing guest details and schedules, and wired up the database write operations.
+* Implemented the client-side date-overlap validation logic to actively prevent conflicting room bookings.
+
+**Why**
+* Restoring the cross-platform scope ensures the application fulfills the original requirements, utilizing `DevicePreview` to verify both Windows desktop and mobile layouts simultaneously.
+* The client-side date validation is a critical business rule; blocking the database write entirely when `(New Check-In < Existing Check-Out) AND (New Check-Out > Existing Check-In)` prevents the need for complex server-side rollbacks.
+* Relying on PocketBase's native Relation field for the `assignedRoomId` handled the database constraints automatically, avoiding manual SQL foreign key errors.
+
+**What broke or what I got stuck on**
+* Encountered an architecture mismatch during the initial PocketBase setup. I originally downloaded the `arm64` executable, which Windows 11 blocked from running on my AMD Ryzen (x64) processor. I resolved this by deleting the directory and running the correct `amd64` executable from the command prompt.
+* Briefly hit a compilation error when extracting the `DashboardContent` widget because it was accidentally placed inside the state class, but this was quickly fixed by moving it to the root file level.
+
+**What is left**
+* Phase 5: Building the searchable Reservation List screen to replace the current placeholder widget and display the live data from PocketBase.
+* Phase 6: Creating the Reservation Details view to show expanded information and status badges.
+* Phase 7: Building the visual Calendar interface to map reservations to specific dates.
+* Phases 8 & 9: Final end-to-end integration testing and viewport padding cleanup.
+
