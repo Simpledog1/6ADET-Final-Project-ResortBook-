@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:device_preview_screenshot/device_preview_screenshot.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart'; // Added for debugPrint
+import 'package:flutter/foundation.dart';
 import 'theme/app_theme.dart';
 import 'screens/dashboard_screen.dart';
 
@@ -14,16 +14,19 @@ void main() {
         ...DevicePreview.defaultTools,
         DevicePreviewScreenshot(
           onScreenshot: (context, screenshot) async {
-            final timestamp = DateTime.now().millisecondsSinceEpoch;
-            // Updated with your exact absolute path using forward slashes
-            final file = File(
-              'G:/ADET FINALS/6ADET-Final-Project-ResortBook-/docs/assets/Documentation Screenshots/screenshot_$timestamp.png',
-            );
+            try {
+              final timestamp = DateTime.now().millisecondsSinceEpoch;
+              final file = File(
+                'G:/ADET FINALS/6ADET-Final-Project-ResortBook-/docs/assets/Documentation Screenshots/screenshot_$timestamp.png',
+              );
 
-            await file.create(recursive: true);
-            await file.writeAsBytes(screenshot.bytes);
+              await file.create(recursive: true);
+              await file.writeAsBytes(screenshot.bytes);
 
-            debugPrint('✅ Screenshot successfully saved to: ${file.path}');
+              debugPrint('✅ SUCCESS! Saved to: ${file.path}');
+            } catch (e) {
+              debugPrint('❌ ERROR SAVING FILE: $e');
+            }
           },
         ),
       ],
