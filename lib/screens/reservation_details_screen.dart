@@ -3,6 +3,7 @@ import '../models/reservation.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import '../utils/currency_format.dart';
 import '../utils/date_format.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_header.dart';
@@ -30,12 +31,30 @@ class ReservationDetailsScreen extends StatelessWidget {
     );
   }
 
+  /// Date with time, or date only for legacy bookings stored without times.
+  String _dateTime(DateTime d) => reservation.isLegacy
+      ? DateFormatUtil.long(d)
+      : '${DateFormatUtil.long(d)} · ${DateFormatUtil.time(d)}';
+
+  /// "2 Nights · Overnight" / "Day Tour · same day" / legacy nights.
+  String get _durationText {
+    final r = reservation;
+    final nights = DateFormatUtil.nights(r.startAt, r.endAt);
+    final range = r.isLegacy
+        ? '${DateFormatUtil.monthDay(r.startAt)} – '
+            '${DateFormatUtil.monthDay(r.endAt)}'
+        : DateFormatUtil.stayRange(r.startAt, r.endAt);
+    final length = nights == 0
+        ? 'Same day'
+        : '$nights Night${nights == 1 ? '' : 's'}';
+    return '${r.stayTypeDisplayName} · $length\n$range';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final nights = DateFormatUtil.nights(
-      reservation.checkInDate,
-      reservation.checkOutDate,
-    );
+    final r = reservation;
+    final unitName = r.unitDisplayName.isEmpty ? '—' : r.unitDisplayName;
+    final unitType = r.unitTypeDisplayName.isEmpty ? '—' : r.unitTypeDisplayName;
 
     return Scaffold(
       appBar: const AppHeader(title: 'Reservation Details'),
@@ -75,14 +94,14 @@ class ReservationDetailsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                reservation.guestName,
+                                r.guestName,
                                 style: AppText.cardTitle.copyWith(
                                   fontSize: 20,
                                 ),
                               ),
                               const SizedBox(height: 6),
                               StatusBadge(
-                                status: reservation.status,
+                                status: r.status,
                                 fontSize: 11,
                                 horizontalPadding: 12,
                               ),
@@ -107,41 +126,65 @@ class ReservationDetailsScreen extends StatelessWidget {
                         _InfoRow(
                           icon: Icons.phone,
                           label: 'Contact Number',
-                          value: reservation.phone.isEmpty
-                              ? '—'
-                              : reservation.phone,
+                          value: r.phone.isEmpty ? '—' : r.phone,
                           showTopBorder: false,
                         ),
                         _InfoRow(
                           icon: Icons.email,
                           label: 'Email',
-                          value: reservation.email.isEmpty
-                              ? '—'
-                              : reservation.email,
+                          value: r.email.isEmpty ? '—' : r.email,
+                        ),
+                        _InfoRow(
+                          icon: Icons.groups,
+                          label: 'Number of Guests',
+                          value: r.guestCount > 0
+                              ? '${r.guestCount} '
+                                  'Guest${r.guestCount == 1 ? '' : 's'}'
+                              : '—',
+                        ),
+                        _InfoRow(
+                          icon: Icons.meeting_room,
+                          label: 'Unit',
+                          value: unitName,
+                          subValue: unitType,
+                        ),
+                        _InfoRow(
+                          icon: Icons.schedule,
+                          label: 'Stay Type',
+                          value: r.stayTypeDisplayName,
+                          subValue: r.isLegacy
+                              ? 'Older reservation (no stay type saved)'
+                              : null,
                         ),
                         _InfoRow(
                           icon: Icons.event_available,
-                          label: 'Check-in Date',
-                          value: DateFormatUtil.long(reservation.checkInDate),
+                          label: 'Check-in',
+                          value: _dateTime(r.startAt),
                         ),
                         _InfoRow(
                           icon: Icons.event_busy,
-                          label: 'Check-out Date',
-                          value: DateFormatUtil.long(reservation.checkOutDate),
+                          label: 'Check-out',
+                          value: _dateTime(r.endAt),
                         ),
                         _InfoRow(
                           icon: Icons.sell,
                           label: 'Reservation Status',
                           valueWidget: StatusBadge(
-                            status: reservation.status,
+                            status: r.status,
                             fontSize: 11,
                             horizontalPadding: 12,
                           ),
                         ),
+                        if (r.notes.isNotEmpty)
+                          _InfoRow(
+                            icon: Icons.sticky_note_2,
+                            label: 'Notes',
+                            value: r.notes,
+                          ),
                         _InfoRow(
                           icon: Icons.badge,
                           label: 'Reservation ID',
-                          value: '#${reservation.id}',
+                          value: '#${r.id}',
                         ),
                       ],
                     ),
@@ -152,50 +195,15 @@ class ReservationDetailsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
 
             // Duration summary
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.primaryTint,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                border: Border.all(color: AppColors.primaryTintBorder),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    child: const Icon(
-                      Icons.nightlight_round,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('DURATION', style: AppText.overline),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$nights Night${nights == 1 ? '' : 's'} · '
-                          '${DateFormatUtil.monthDay(reservation.checkInDate)} – '
-                          '${DateFormatUtil.monthDay(reservation.checkOutDate)}',
-                          style: AppText.valueStrong.copyWith(
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            _TintCard(
+              icon: Icons.nightlight_round,
+              label: 'Duration',
+              value: _durationText,
             ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Pricing (snapshot saved with the reservation)
+            _PricingCard(reservation: r),
           ],
         ),
       ),
@@ -247,6 +255,7 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String? value;
+  final String? subValue;
   final Widget? valueWidget;
   final bool showTopBorder;
 
@@ -254,6 +263,7 @@ class _InfoRow extends StatelessWidget {
     required this.icon,
     required this.label,
     this.value,
+    this.subValue,
     this.valueWidget,
     this.showTopBorder = true,
   });
@@ -289,9 +299,139 @@ class _InfoRow extends StatelessWidget {
                 SizedBox(height: valueWidget != null ? 4 : 2),
                 valueWidget ??
                     Text(value ?? '', style: AppText.valueStrong),
+                if (subValue != null && subValue!.isNotEmpty)
+                  Text(subValue!, style: AppText.bodySecondary),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Light-blue summary card (Figma "Duration" card).
+class _TintCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _TintCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.primaryTint,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        border: Border.all(color: AppColors.primaryTintBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+            ),
+            child: Icon(icon, size: 16, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label.toUpperCase(), style: AppText.overline),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: AppText.valueStrong.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rate, pricing basis, quantity and total saved with the reservation (₱).
+class _PricingCard extends StatelessWidget {
+  final Reservation reservation;
+
+  const _PricingCard({required this.reservation});
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reservation;
+    final hasPrice = r.totalAmount > 0 || r.rate > 0;
+    final perNight = r.rateBasis == 'per_night';
+    final basisLabel = r.rateBasis.isEmpty
+        ? '—'
+        : (perNight ? 'Per night' : 'Per stay');
+    final quantityLabel = r.quantity <= 0
+        ? '—'
+        : perNight
+            ? '${r.quantity} night${r.quantity == 1 ? '' : 's'}'
+            : '${r.quantity} stay${r.quantity == 1 ? '' : 's'}';
+
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('PRICING', style: AppText.overline),
+          const SizedBox(height: 8),
+          if (!hasPrice)
+            const Text(
+              'No price was recorded for this reservation.',
+              style: AppText.bodySecondary,
+            )
+          else ...[
+            _priceRow('Rate', CurrencyFormat.peso(r.rate)),
+            _priceRow('Pricing basis', basisLabel),
+            _priceRow('Quantity', quantityLabel),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(height: 1, thickness: 1, color: AppColors.divider),
+            ),
+            Row(
+              children: [
+                const Text('Total', style: AppText.valueStrong),
+                const Spacer(),
+                Text(
+                  CurrencyFormat.peso(r.totalAmount),
+                  style: AppText.cardTitle.copyWith(
+                    fontSize: 20,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _priceRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Text(label, style: AppText.bodySecondary),
+          const Spacer(),
+          Text(value, style: AppText.value),
         ],
       ),
     );

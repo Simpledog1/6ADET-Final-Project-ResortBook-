@@ -70,6 +70,21 @@ class DateFormatUtil {
   /// "Jun 15, 2025 · 2:00 PM"
   static String shortWithTime(DateTime d) => '${short(d)} · ${time(d)}';
 
+  /// "Jun 15, 2:00 PM"
+  static String monthDayTime(DateTime d) => '${monthDay(d)}, ${time(d)}';
+
+  /// Compact stay range:
+  /// * same day → "Jun 15 · 8:00 AM – 5:00 PM"
+  /// * multi-day → "Jun 15, 2:00 PM → Jun 16, 12:00 PM"
+  /// * [datesOnly] (legacy bookings without times) → "Jun 15 → Jun 18, 2025"
+  static String stayRange(DateTime start, DateTime end, {bool datesOnly = false}) {
+    if (datesOnly) return '${monthDay(start)} → ${short(end)}';
+    if (isSameDay(start.toLocal(), end.toLocal())) {
+      return '${monthDay(start)} · ${time(start)} – ${time(end)}';
+    }
+    return '${monthDayTime(start)} → ${monthDayTime(end)}';
+  }
+
   static String _formatTime(int hour, int minute) {
     final h = hour % 12 == 0 ? 12 : hour % 12;
     final m = minute.toString().padLeft(2, '0');

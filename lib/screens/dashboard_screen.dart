@@ -4,7 +4,6 @@ import '../services/pocketbase_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
-import '../utils/date_format.dart';
 import '../widgets/app_header.dart';
 import '../widgets/reservation_cards.dart';
 import 'add_reservation_screen.dart';
@@ -47,13 +46,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) _reload();
   }
 
-  /// Reservations that haven't ended yet, soonest first (max 3).
+  /// Non-cancelled reservations that haven't ended yet (by their actual
+  /// end date/time), soonest first (max 3).
   List<Reservation> _upcoming(List<Reservation> all) {
-    final today = DateFormatUtil.dateOnly(DateTime.now());
+    final now = DateTime.now();
     final list = all
-        .where((r) => !DateFormatUtil.dateOnly(r.checkOutDate).isBefore(today))
+        .where((r) => !r.isCancelled && r.endAt.isAfter(now))
         .toList()
-      ..sort((a, b) => a.checkInDate.compareTo(b.checkInDate));
+      ..sort((a, b) => a.startAt.compareTo(b.startAt));
     return list.take(3).toList();
   }
 

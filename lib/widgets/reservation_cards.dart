@@ -3,12 +3,39 @@ import '../models/reservation.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import '../utils/currency_format.dart';
 import '../utils/date_format.dart';
 import 'app_card.dart';
 import 'status_badge.dart';
 
+/// Shared display helpers for reservation cards.
+extension ReservationDisplay on Reservation {
+  /// "Cottage 3 · Family Cottage" (falls back to "No unit assigned").
+  String get unitLine {
+    final name = unitDisplayName;
+    final type = unitTypeDisplayName;
+    if (name.isEmpty) return 'No unit assigned';
+    return type.isEmpty ? name : '$name · $type';
+  }
+
+  /// "Overnight · 2 guests" (guest count omitted for legacy records).
+  String get stayLine {
+    final guests = guestCount > 0
+        ? ' · $guestCount guest${guestCount == 1 ? '' : 's'}'
+        : '';
+    return '$stayTypeDisplayName$guests';
+  }
+
+  /// Legacy bookings were stored as whole dates, so their times are hidden.
+  String get rangeLine =>
+      DateFormatUtil.stayRange(startAt, endAt, datesOnly: isLegacy);
+
+  bool get hasTotal => totalAmount > 0;
+}
+
 /// Dashboard "Upcoming Reservations" card:
-/// name + status, phone, then Check-in / Check-out columns.
+/// guest + status, unit, stay type + guests, check-in / check-out
+/// columns (date and time) and the total.
 class UpcomingReservationCard extends StatelessWidget {
   final Reservation reservation;
   final VoidCallback? onTap;
@@ -21,17 +48,17 @@ class UpcomingReservationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = reservation;
     return AppCard(
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _NameRow(reservation: reservation),
+          _NameRow(reservation: r),
           const SizedBox(height: 12),
-          _IconText(
-            icon: Icons.phone_outlined,
-            text: reservation.phone.isEmpty ? '—' : reservation.phone,
-          ),
+          _IconText(icon: Icons.meeting_room_outlined, text: r.unitLine),
+          const SizedBox(height: 6),
+          _IconText(icon: Icons.schedule, text: r.stayLine),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.only(top: 8),
@@ -42,28 +69,35 @@ class UpcomingReservationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _LabeledDate(
+                  child: _LabeledDateTime(
                     label: 'Check-in',
-                    date: reservation.checkInDate,
+                    date: r.startAt,
+                    showTime: !r.isLegacy,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: _LabeledDate(
+                  child: _LabeledDateTime(
                     label: 'Check-out',
-                    date: reservation.checkOutDate,
+                    date: r.endAt,
+                    showTime: !r.isLegacy,
                   ),
                 ),
               ],
             ),
           ),
+          if (r.hasTotal) ...[
+            const SizedBox(height: 10),
+            _TotalRow(amount: r.totalAmount),
+          ],
         ],
       ),
     );
   }
 }
 
-/// Reservation List card: name + status, date range, chevron.
+/// Reservation List card: guest + status, unit, date/time range,
+/// stay type + guests, total and chevron.
 class ReservationListCard extends StatelessWidget {
   final Reservation reservation;
   final VoidCallback? onTap;
@@ -72,23 +106,44 @@ class ReservationListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = reservation;
     return AppCard(
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _NameRow(reservation: reservation),
+          _NameRow(reservation: r),
           const SizedBox(height: 10),
+          _IconText(
+            icon: Icons.meeting_room_outlined,
+            iconSize: 14,
+            text: r.unitLine,
+          ),
+          const SizedBox(height: 6),
+          _IconText(
+            icon: Icons.calendar_today_outlined,
+            iconSize: 13,
+            text: r.rangeLine,
+          ),
+          const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
                 child: _IconText(
-                  icon: Icons.calendar_today_outlined,
-                  iconSize: 13,
-                  text:
-                      '${DateFormatUtil.short(reservation.checkInDate)} → ${DateFormatUtil.short(reservation.checkOutDate)}',
+                  icon: Icons.schedule,
+                  iconSize: 14,
+                  text: r.stayLine,
                 ),
               ),
+              if (r.hasTotal) ...[
+                Text(
+                  CurrencyFormat.peso(r.totalAmount),
+                  style: AppText.valueStrong.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
               const Icon(
                 Icons.chevron_right,
                 size: 20,
@@ -102,8 +157,8 @@ class ReservationListCard extends StatelessWidget {
   }
 }
 
-/// Calendar "Reservations on <day>" card: tinted status, phone, divider,
-/// check-in → check-out.
+/// Calendar "Reservations on <day>" card: tinted status, unit,
+/// stay type + guests, divider, start → end with times.
 class CalendarReservationCard extends StatelessWidget {
   final Reservation reservation;
   final VoidCallback? onTap;
@@ -116,6 +171,7 @@ class CalendarReservationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = reservation;
     return AppCard(
       onTap: onTap,
       radius: AppSpacing.radiusSm,
@@ -129,13 +185,15 @@ class CalendarReservationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _NameRow(reservation: reservation, tinted: true),
+          _NameRow(reservation: r, tinted: true),
           const SizedBox(height: 12),
           _IconText(
-            icon: Icons.phone,
+            icon: Icons.meeting_room_outlined,
             iconSize: 14,
-            text: reservation.phone.isEmpty ? '—' : reservation.phone,
+            text: r.unitLine,
           ),
+          const SizedBox(height: 6),
+          _IconText(icon: Icons.schedule, iconSize: 14, text: r.stayLine),
           const SizedBox(height: 12),
           const Divider(height: 1, thickness: 1, color: AppColors.divider),
           const SizedBox(height: 12),
@@ -147,22 +205,10 @@ class CalendarReservationCard extends StatelessWidget {
                 color: AppColors.primary,
               ),
               const SizedBox(width: 8),
-              Text(
-                DateFormatUtil.short(reservation.checkInDate),
-                style: AppText.value,
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.arrow_forward,
-                size: 12,
-                color: AppColors.textMuted,
-              ),
-              const SizedBox(width: 8),
-              Flexible(
+              Expanded(
                 child: Text(
-                  DateFormatUtil.short(reservation.checkOutDate),
+                  r.rangeLine,
                   style: AppText.value,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -255,11 +301,16 @@ class _IconText extends StatelessWidget {
   }
 }
 
-class _LabeledDate extends StatelessWidget {
+class _LabeledDateTime extends StatelessWidget {
   final String label;
   final DateTime date;
+  final bool showTime;
 
-  const _LabeledDate({required this.label, required this.date});
+  const _LabeledDateTime({
+    required this.label,
+    required this.date,
+    this.showTime = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +320,28 @@ class _LabeledDate extends StatelessWidget {
         Text(label, style: AppText.caption),
         const SizedBox(height: 2),
         Text(DateFormatUtil.short(date), style: AppText.value),
+        if (showTime)
+          Text(DateFormatUtil.time(date), style: AppText.bodySecondary),
+      ],
+    );
+  }
+}
+
+class _TotalRow extends StatelessWidget {
+  final double amount;
+
+  const _TotalRow({required this.amount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Text('Total', style: AppText.caption),
+        const Spacer(),
+        Text(
+          CurrencyFormat.peso(amount),
+          style: AppText.valueStrong.copyWith(color: AppColors.primary),
+        ),
       ],
     );
   }

@@ -49,14 +49,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
-  /// Reservations whose stay covers [day] (inclusive of check-out day).
+  /// Reservations whose actual time window touches [day]
+  /// (`startAt < end of day && endAt > start of day`).
+  ///
+  /// A Night Tour (7 PM → 6 AM) shows on both dates; an Overnight that
+  /// checks out at 12 PM shows on its check-out date too. Active bookings
+  /// are listed before cancelled ones, then by start time.
   List<Reservation> _reservationsOn(List<Reservation> all, DateTime day) {
-    return all.where((r) {
-      final start = DateFormatUtil.dateOnly(r.checkInDate);
-      final end = DateFormatUtil.dateOnly(r.checkOutDate);
-      return !day.isBefore(start) && !day.isAfter(end);
-    }).toList()
-      ..sort((a, b) => a.checkInDate.compareTo(b.checkInDate));
+    final dayStart = DateTime(day.year, day.month, day.day);
+    final dayEnd = DateTime(day.year, day.month, day.day + 1);
+    return all
+        .where((r) => r.startAt.isBefore(dayEnd) && r.endAt.isAfter(dayStart))
+        .toList()
+      ..sort((a, b) {
+        if (a.isCancelled != b.isCancelled) return a.isCancelled ? 1 : -1;
+        return a.startAt.compareTo(b.startAt);
+      });
   }
 
   @override
