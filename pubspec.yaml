@@ -27,5 +27,18 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   # Put images, fonts and sounds in assets/ and list them here, for example:
-  # assets:
-  #   - assets/images/
+  assets:
+    - assets/images/
+
+  # Inter (from the Figma design), bundled locally — no extra package needed.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

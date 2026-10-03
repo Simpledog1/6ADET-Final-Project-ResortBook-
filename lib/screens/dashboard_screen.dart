@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
+import '../models/reservation.dart';
+import '../services/pocketbase_service.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../theme/app_theme.dart';
+import '../utils/date_format.dart';
+import '../widgets/app_header.dart';
+import '../widgets/reservation_cards.dart';
 import 'add_reservation_screen.dart';
-import 'reservation_list_screen.dart';
 import 'calendar_screen.dart';
+import 'reservation_details_screen.dart';
+import 'reservation_list_screen.dart';
 
+/// Home screen / main hub (Figma "Dashboard").
+///
+/// Shows upcoming reservations and three buttons that open
+/// Add Reservation, Reservation List and Calendar.
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -12,170 +24,141 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedIndex = 0;
+  late Future<List<Reservation>> _reservationsFuture;
 
-  // Fully integrated screens through Phase 8
-  final List<Widget> _screens = [
-    const DashboardContent(),
-    const AddReservationScreen(),
-    const ReservationListScreen(),
-    const CalendarScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _reservationsFuture = PocketBaseService.getReservations();
+  }
+
+  void _reload() {
+    setState(() {
+      _reservationsFuture = PocketBaseService.getReservations();
+    });
+  }
+
+  /// Opens a screen and refreshes the dashboard when the user comes back,
+  /// so new reservations show up immediately.
+  Future<void> _open(Widget screen) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => screen),
+    );
+    if (mounted) _reload();
+  }
+
+  /// Reservations that haven't ended yet, soonest first (max 3).
+  List<Reservation> _upcoming(List<Reservation> all) {
+    final today = DateFormatUtil.dateOnly(DateTime.now());
+    final list = all
+        .where((r) => !DateFormatUtil.dateOnly(r.checkOutDate).isBefore(today))
+        .toList()
+      ..sort((a, b) => a.checkInDate.compareTo(b.checkInDate));
+    return list.take(3).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth > 800) {
-          return _buildDesktopLayout();
-        }
-        return _buildMobileLayout();
-      },
-    );
-  }
-
-  Widget _buildMobileLayout() {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ResortBook'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      ),
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle), label: 'Add'),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'List'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Calendar',
+      appBar: const AppHeader.home(),
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => _reload(),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopLayout() {
-    return Scaffold(
-      body: Row(
-        children: [
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) =>
-                setState(() => _selectedIndex = index),
-            labelType: NavigationRailLabelType.all,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.dashboard),
-                label: Text('Home'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.add_circle),
-                label: Text('Add'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.list),
-                label: Text('List'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.calendar_month),
-                label: Text('Calendar'),
-              ),
-            ],
-          ),
-          const VerticalDivider(thickness: 1, width: 1),
-          Expanded(
-            child: Scaffold(
-              appBar: AppBar(
-                title: const Text('ResortBook Dashboard'),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              ),
-              body: _screens[_selectedIndex],
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(left: 2),
+              child: Text('Upcoming Reservations', style: AppText.sectionTitle),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            FutureBuilder<List<Reservation>>(
+              future: _reservationsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return const EmptyStateCard(
+                    icon: Icons.cloud_off_outlined,
+                    message: 'Could not load reservations.\nPull down to retry.',
+                  );
+                }
+                final upcoming = _upcoming(snapshot.data ?? []);
+                if (upcoming.isEmpty) {
+                  return const EmptyStateCard(
+                    icon: Icons.event_busy_outlined,
+                    message: 'No upcoming reservations.',
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final res in upcoming) ...[
+                      UpcomingReservationCard(
+                        reservation: res,
+                        onTap: () => _open(
+                          ReservationDetailsScreen(reservation: res),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _HubButton(
+              icon: Icons.edit_calendar_outlined,
+              label: 'Add Reservation',
+              onPressed: () => _open(const AddReservationScreen()),
+            ),
+            const SizedBox(height: 12),
+            _HubButton(
+              icon: Icons.format_list_bulleted,
+              label: 'View Reservations',
+              onPressed: () => _open(const ReservationListScreen()),
+            ),
+            const SizedBox(height: 12),
+            _HubButton(
+              icon: Icons.calendar_today_outlined,
+              label: 'View Calendar',
+              onPressed: () => _open(const CalendarScreen()),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class DashboardContent extends StatelessWidget {
-  const DashboardContent({super.key});
+/// Full-width navy action button used on the dashboard.
+class _HubButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const _HubButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Today\'s Overview',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              _buildSummaryCard(
-                context,
-                'Rooms Available',
-                '12',
-                Icons.meeting_room,
-              ),
-              _buildSummaryCard(
-                context,
-                'Active Bookings',
-                '4',
-                Icons.book_online,
-              ),
-              _buildSummaryCard(
-                context,
-                'Pending Clean',
-                '2',
-                Icons.cleaning_services,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard(
-    BuildContext context,
-    String title,
-    String value,
-    IconData icon,
-  ) {
-    return SizedBox(
-      width: 220,
-      child: Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                icon,
-                size: 32,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(title, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.xs),
-              Text(value, style: Theme.of(context).textTheme.headlineSmall),
-            ],
-          ),
-        ),
+    return FilledButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+      label: Text(
+        label,
+        style: AppText.button.copyWith(fontSize: 14),
       ),
     );
   }

@@ -1,27 +1,25 @@
 // A widget test: it builds your app in memory and checks what is on screen.
 // Run them all with: flutter test
-//
-// You are not required to write more of these, but a project with a few real
-// tests reads very differently from one with none.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:final_project/main.dart';
+import 'package:final_project/screens/dashboard_screen.dart';
+import 'package:final_project/theme/app_theme.dart';
 
 void main() {
-  testWidgets('home screen shows its title and counts taps', (tester) async {
-    // Build the app. Note we build MyApp directly, not the DevicePreview
-    // wrapper, because a test does not need the phone frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('dashboard shows the header and hub buttons', (tester) async {
+    // Build the dashboard directly, without the DevicePreview wrapper,
+    // because a test does not need the phone frame.
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.lightTheme, home: const DashboardScreen()),
+    );
 
-    expect(find.text('It works'), findsOneWidget);
-    expect(find.text('Taps: 0'), findsOneWidget);
-
-    // Tap the button, then let the widget rebuild.
-    await tester.tap(find.byType(FilledButton));
-    await tester.pump();
-
-    expect(find.text('Taps: 1'), findsOneWidget);
+    expect(find.text('ResortBook'), findsOneWidget);
+    expect(find.text('Upcoming Reservations'), findsOneWidget);
+    expect(find.text('Add Reservation'), findsOneWidget);
+    expect(find.text('View Reservations'), findsOneWidget);
+    expect(find.text('View Calendar'), findsOneWidget);
+    expect(find.byType(FilledButton), findsNWidgets(3));
   });
 }
