@@ -29,11 +29,13 @@ class CompactButtons {
 /// Shows a confirmation dialog and returns true when the user confirms.
 ///
 /// [details] is an optional extra widget shown under the message.
+/// [cancelLabel] is the text of the button that closes the dialog.
 Future<bool> showConfirmDialog(
   BuildContext context, {
   required String title,
   required String message,
   required String confirmLabel,
+  String cancelLabel = 'Cancel',
   bool destructive = false,
   Widget? details,
 }) async {
@@ -43,6 +45,7 @@ Future<bool> showConfirmDialog(
       title: title,
       message: message,
       confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
       destructive: destructive,
       details: details,
     ),
@@ -54,6 +57,7 @@ class ConfirmDialog extends StatelessWidget {
   final String title;
   final String message;
   final String confirmLabel;
+  final String cancelLabel;
   final bool destructive;
   final Widget? details;
 
@@ -62,6 +66,7 @@ class ConfirmDialog extends StatelessWidget {
     required this.title,
     required this.message,
     required this.confirmLabel,
+    this.cancelLabel = 'Cancel',
     this.destructive = false,
     this.details,
   });
@@ -90,7 +95,7 @@ class ConfirmDialog extends StatelessWidget {
         OutlinedButton(
           style: CompactButtons.outlined(color: AppColors.textSecondary),
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(cancelLabel),
         ),
         FilledButton(
           style: CompactButtons.filled(

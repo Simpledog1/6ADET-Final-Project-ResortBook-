@@ -82,12 +82,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
   List<Reservation> _reservationsOn(List<Reservation> all, DateTime day) =>
       CalendarLogic.reservationsOn(all, day);
 
+  /// Opens Details; reloads when it reports a change (edit, cancel,
+  /// check-in, complete or restore).
   Future<void> _openDetails(Reservation res) async {
-    await Navigator.of(context).push(
+    final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => ReservationDetailsScreen(reservation: res),
       ),
     );
+    if (changed == true && mounted) _reload();
   }
 
   Future<void> _openAdd() async {

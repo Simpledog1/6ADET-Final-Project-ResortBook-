@@ -38,6 +38,33 @@ class PocketBaseService {
     }
   }
 
+  /// One reservation by id, with its unit (+ unit type) and stay type.
+  static Future<Reservation> getReservation(String id) async {
+    final record = await pb
+        .collection('reservations')
+        .getOne(id, expand: reservationExpand);
+    return Reservation.fromRecord(record);
+  }
+
+  /// Updates the given fields of a reservation and returns the saved record.
+  ///
+  /// The body is built by `ReservationWorkflow.buildUpdateBody` (edits) or
+  /// [updateReservationStatus]; only the fields it contains are changed.
+  static Future<Reservation> updateReservation(
+    String id,
+    Map<String, dynamic> body,
+  ) async {
+    final record = await pb
+        .collection('reservations')
+        .update(id, body: body, expand: reservationExpand);
+    return Reservation.fromRecord(record);
+  }
+
+  /// Changes only the `status` field (Check In, Complete, Cancel, Restore).
+  static Future<Reservation> updateReservationStatus(String id, String status) {
+    return updateReservation(id, {'status': status});
+  }
+
   /// Every reservation for one unit (any status).
   static Future<List<Reservation>> getReservationsForUnit(String unitId) async {
     final records = await pb

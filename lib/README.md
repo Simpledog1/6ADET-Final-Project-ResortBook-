@@ -68,3 +68,14 @@ The add reservation screen implements strict date-overlap logic to block double-
 ## 7. Known issues and next steps
 * **Known Issues:** The "List" and "Calendar" tabs currently display empty placeholder text, as their respective UI screens have not yet been built.
 * **Next Steps:** The immediate next step is Phase 5: replacing the placeholder text with the actual searchable `Reservation List` screen to display live data from PocketBase. Following that, we will build the `Reservation Details` view (Phase 6) and the visual `Calendar` interface (Phase 7).
+
+## 8. Booking management (Stage 6)
+Reservations can now be managed from the **Reservation Details** screen (phone and desktop):
+
+* **Edit Reservation** reuses the Add Reservation form. Guest details and notes can be changed freely. Changing the guest count re-checks the unit's capacity. Changing the unit, stay type or dates re-checks availability (ignoring the reservation itself) and recalculates the price with the current rate; otherwise the saved times and price are kept exactly.
+* **Statuses:** `Reserved` → `Checked In` (from the check-in date) → `Completed`. A `Reserved` booking can be cancelled. A checked-in guest can only have guest details and notes edited; completed and cancelled reservations can't be edited.
+* **Cancel Reservation** (with confirmation) only changes the status to `Cancelled`. The record and its saved prices stay for history, and cancelled reservations never block availability.
+* **Restore** reopens a cancelled reservation as `Reserved`, but only if its unit is still free for those dates.
+* There is no permanent delete; cancelling replaces it.
+
+**Limitation:** if two people edit the same reservation at the same time, the last save wins.

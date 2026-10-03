@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../logic/reservation_workflow.dart';
 import '../models/reservation.dart';
+import '../services/reservation_gateway.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
@@ -12,28 +14,410 @@ import '../widgets/desktop_page.dart';
 import '../widgets/guest_avatar.dart';
 import '../widgets/info_tile.dart';
 import '../widgets/panel_card.dart';
+import '../widgets/reservation_cards.dart';
 import '../widgets/responsive.dart';
 import '../widgets/status_badge.dart';
+import 'add_reservation_screen.dart';
 
 /// Reservation Details.
 ///
-/// * Phone / tablet: the existing single-column card with pinned
-///   Edit / Delete buttons.
+/// * Phone / tablet: the existing single-column card with pinned action
+///   buttons.
 /// * Desktop (sidebar shell): two columns — guest & reservation details and
 ///   duration on the left (~60%), timeline, pricing and notes on the right.
 ///
-/// Edit and Delete are placeholders on both layouts (Stage 6).
-class ReservationDetailsScreen extends StatelessWidget {
+/// Actions depend on the status (see [ReservationWorkflow]):
+/// * Reserved — Edit, Check In (from the check-in date), Cancel Reservation
+/// * Checked In — Mark Completed, Edit (guest details and notes only)
+/// * Completed — nothing
+/// * Cancelled — Restore Reservation
+///
+/// After an action the reservation is reloaded from PocketBase. When the
+/// page closes it returns `true` if anything changed, so the page that
+/// opened it can refresh.
+class ReservationDetailsScreen extends StatefulWidget {
   final Reservation reservation;
 
-  const ReservationDetailsScreen({super.key, required this.reservation});
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
+  /// Current time; tests pass a fixed clock. Defaults to [DateTime.now].
+  final DateTime Function()? clock;
+
+  const ReservationDetailsScreen({
+    super.key,
+    required this.reservation,
+    this.gateway = const ReservationGateway(),
+    this.clock,
+  });
+
+  @override
+  State<ReservationDetailsScreen> createState() =>
+      _ReservationDetailsScreenState();
+}
+
+/// One button in the Details action area (same list on phone and desktop).
+class _DetailAction {
+  final Key key;
+  final String label;
+  final IconData icon;
+
+  /// Null when the action is shown but disabled.
+  final VoidCallback? onPressed;
+
+  /// Filled button (main action) instead of outlined.
+  final bool primary;
+
+  /// Red outlined button (Cancel Reservation).
+  final bool destructive;
+
+  /// Why the action is disabled (tooltip / note).
+  final String? disabledReason;
+
+  const _DetailAction({
+    required this.key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.primary = false,
+    this.destructive = false,
+    this.disabledReason,
+  });
+}
+
+class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
+  /// The reservation as last loaded from PocketBase.
+  late Reservation reservation;
+
+  /// True while an action is running (buttons are disabled).
+  bool _busy = false;
+
+  /// True once something was saved, so the opener knows to refresh.
+  bool _changed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    reservation = widget.reservation;
+  }
+
+  DateTime _now() => widget.clock?.call() ?? DateTime.now();
+
+  ReservationGateway get _gateway => widget.gateway;
 
   String get _initials => GuestAvatar.initialsOf(reservation.guestName);
 
-  void _showComingSoon(BuildContext context, String action) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$action reservations is coming soon.')),
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Reloads the reservation from PocketBase after an action.
+  Future<void> _refresh() async {
+    try {
+      final fresh = await _gateway.getReservation(reservation.id);
+      if (!mounted) return;
+      setState(() => reservation = fresh);
+    } catch (e) {
+      if (mounted) _showMessage('Could not reload the reservation: $e');
+    }
+  }
+
+  /// Saves a status change, then reloads the reservation.
+  Future<void> _changeStatus(String status, String doneMessage) async {
+    setState(() => _busy = true);
+    try {
+      await _gateway.updateStatus(reservation.id, status);
+      _changed = true;
+      await _refresh();
+      if (mounted) _showMessage(doneMessage);
+    } catch (e) {
+      if (mounted) _showMessage('Could not update the reservation: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Guest, unit, stay type and dates shown in the confirmation dialogs.
+  Widget _summaryForDialog() {
+    final r = reservation;
+    Widget line(IconData icon, String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppColors.textMuted),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: AppText.value)),
+        ],
+      ),
     );
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          line(Icons.person, r.guestName.isEmpty ? '—' : r.guestName),
+          line(Icons.meeting_room_outlined, r.unitLine),
+          line(Icons.schedule, r.stayTypeDisplayName),
+          line(Icons.event, r.rangeLine),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _cancelReservation() async {
+    if (!ReservationWorkflow.canCancel(reservation, _now())) return;
+    final unit = reservation.unitDisplayName.isEmpty
+        ? 'The unit'
+        : reservation.unitDisplayName;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Cancel this reservation?',
+      message:
+          '$unit becomes available again for these dates. The reservation '
+          'stays in your records and can be restored later.',
+      confirmLabel: 'Cancel Reservation',
+      cancelLabel: 'Keep Reservation',
+      destructive: true,
+      details: _summaryForDialog(),
+    );
+    if (!confirmed || !mounted) return;
+    await _changeStatus(ReservationStatus.cancelled, 'Reservation cancelled.');
+  }
+
+  Future<void> _checkIn() async {
+    if (!ReservationWorkflow.canCheckIn(reservation, _now())) return;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Check in this guest?',
+      message: 'The reservation will be marked as Checked In.',
+      confirmLabel: 'Check In',
+      details: _summaryForDialog(),
+    );
+    if (!confirmed || !mounted) return;
+    await _changeStatus(ReservationStatus.checkedIn, 'Guest checked in.');
+  }
+
+  Future<void> _complete() async {
+    if (!ReservationWorkflow.canComplete(reservation, _now())) return;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Mark this stay as completed?',
+      message:
+          'The reservation will be marked as Completed and can no longer '
+          'be edited.',
+      confirmLabel: 'Mark Completed',
+      details: _summaryForDialog(),
+    );
+    if (!confirmed || !mounted) return;
+    await _changeStatus(ReservationStatus.completed, 'Stay marked completed.');
+  }
+
+  /// Cancelled → Reserved, only if the original time window is still free.
+  Future<void> _restore() async {
+    final r = reservation;
+    if (!r.isCancelled) return;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Restore this reservation?',
+      message:
+          'It becomes Reserved again if the unit is still free for these '
+          'dates.',
+      confirmLabel: 'Restore',
+      details: _summaryForDialog(),
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _busy = true);
+    String? problem;
+    try {
+      // Same check as booking: non-cancelled overlaps on this unit,
+      // excluding this reservation, re-checked locally.
+      final candidates = await _gateway.findOverlapping(
+        unitId: r.unitId,
+        start: r.startAt,
+        end: r.endAt,
+        excludeReservationId: r.id,
+      );
+      problem = ReservationWorkflow.restoreError(r, candidates);
+    } catch (e) {
+      problem = 'Could not check availability: $e';
+    }
+    if (!mounted) return;
+
+    if (problem != null) {
+      setState(() => _busy = false);
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            "Can't restore this reservation",
+            style: AppText.cardTitle.copyWith(fontSize: 18),
+          ),
+          content: Text(problem!, style: AppText.bodySecondary),
+          actions: [
+            FilledButton(
+              style: CompactButtons.filled(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    setState(() => _busy = false);
+    await _changeStatus(ReservationStatus.reserved, 'Reservation restored.');
+  }
+
+  Future<void> _edit() async {
+    if (!ReservationWorkflow.canEdit(reservation)) return;
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            AddReservationScreen(reservation: reservation, gateway: _gateway),
+      ),
+    );
+    if (saved == true && mounted) {
+      _changed = true;
+      await _refresh();
+    }
+  }
+
+  /// The actions for the current status, in display order.
+  List<_DetailAction> _actions() {
+    final r = reservation;
+    final now = _now();
+    final status = ReservationStatus.normalize(r.status);
+    VoidCallback? when(bool allowed, VoidCallback action) =>
+        (allowed && !_busy) ? action : null;
+
+    final edit = _DetailAction(
+      key: const ValueKey('action-edit'),
+      label: 'Edit Reservation',
+      icon: Icons.edit_note,
+      onPressed: when(ReservationWorkflow.canEdit(r), _edit),
+      primary:
+          status == ReservationStatus.reserved ||
+          status == ReservationStatus.completed,
+      disabledReason: ReservationWorkflow.editBlockedReason(r),
+    );
+
+    switch (status) {
+      case ReservationStatus.reserved:
+        final canCheckIn = ReservationWorkflow.canCheckIn(r, now);
+        return [
+          edit,
+          _DetailAction(
+            key: const ValueKey('action-checkin'),
+            label: 'Check In',
+            icon: Icons.login,
+            onPressed: when(canCheckIn, _checkIn),
+            disabledReason: canCheckIn
+                ? null
+                : ReservationWorkflow.statusChangeError(
+                    r,
+                    ReservationStatus.checkedIn,
+                    now,
+                  ),
+          ),
+          _DetailAction(
+            key: const ValueKey('action-cancel'),
+            label: 'Cancel Reservation',
+            icon: Icons.event_busy,
+            onPressed: when(true, _cancelReservation),
+            destructive: true,
+          ),
+        ];
+      case ReservationStatus.checkedIn:
+        return [
+          _DetailAction(
+            key: const ValueKey('action-complete'),
+            label: 'Mark Completed',
+            icon: Icons.task_alt,
+            onPressed: when(true, _complete),
+            primary: true,
+          ),
+          edit,
+        ];
+      case ReservationStatus.cancelled:
+        return [
+          _DetailAction(
+            key: const ValueKey('action-restore'),
+            label: 'Restore Reservation',
+            icon: Icons.restore,
+            onPressed: when(true, _restore),
+            primary: true,
+          ),
+          edit,
+        ];
+      default: // Completed: nothing to do
+        return [edit];
+    }
+  }
+
+  /// First reason why an action is disabled (shown under the buttons).
+  String? get _actionNote {
+    for (final action in _actions()) {
+      if (action.onPressed == null && action.disabledReason != null) {
+        return action.disabledReason;
+      }
+    }
+    return null;
+  }
+
+  /// A full-width button (phone) or compact button (desktop).
+  Widget _actionButton(_DetailAction action, {required bool compact}) {
+    final Widget button;
+    if (action.primary) {
+      button = FilledButton.icon(
+        key: action.key,
+        style: compact ? CompactButtons.filled() : null,
+        onPressed: action.onPressed,
+        icon: Icon(action.icon, size: 20),
+        label: Text(action.label),
+      );
+    } else if (action.destructive) {
+      button = OutlinedButton.icon(
+        key: action.key,
+        style: compact
+            ? CompactButtons.outlined(color: AppColors.cancelled)
+            : OutlinedButton.styleFrom(
+                foregroundColor: AppColors.cancelled,
+                backgroundColor: AppColors.surface,
+                side: const BorderSide(color: AppColors.cancelled, width: 2),
+              ),
+        onPressed: action.onPressed,
+        icon: Icon(action.icon, size: 18),
+        label: Text(action.label),
+      );
+    } else {
+      button = OutlinedButton.icon(
+        key: action.key,
+        style: compact
+            ? CompactButtons.outlined()
+            : OutlinedButton.styleFrom(backgroundColor: AppColors.surface),
+        onPressed: action.onPressed,
+        icon: Icon(action.icon, size: 18),
+        label: Text(action.label),
+      );
+    }
+
+    if (action.onPressed == null && action.disabledReason != null) {
+      return Tooltip(message: action.disabledReason!, child: button);
+    }
+    return button;
   }
 
   /// Date with time, or date only for legacy bookings stored without times.
@@ -62,8 +446,18 @@ class ReservationDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (DesktopShellScope.isInside(context)) return _buildDesktop(context);
-    return _buildMobile(context);
+    final page = DesktopShellScope.isInside(context)
+        ? _buildDesktop(context)
+        : _buildMobile(context);
+
+    // After a change, leaving the page returns `true` to the opener.
+    return PopScope<bool>(
+      canPop: !_changed,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) Navigator.of(context).pop(true);
+      },
+      child: page,
+    );
   }
 
   // ── Phone / tablet (unchanged layout, centred on tablets) ─────────────
@@ -226,7 +620,7 @@ class ReservationDetailsScreen extends StatelessWidget {
         ),
       ),
 
-      // Pinned action buttons (Edit / Delete are placeholders for now)
+      // Pinned action buttons (depend on the status)
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppColors.background,
@@ -245,25 +639,17 @@ class ReservationDetailsScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    FilledButton.icon(
-                      onPressed: () => _showComingSoon(context, 'Editing'),
-                      icon: const Icon(Icons.edit_note, size: 20),
-                      label: const Text('Edit Reservation'),
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: () => _showComingSoon(context, 'Deleting'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.cancelled,
-                        backgroundColor: AppColors.surface,
-                        side: const BorderSide(
-                          color: AppColors.cancelled,
-                          width: 2,
-                        ),
+                    for (final action in _actions()) ...[
+                      _actionButton(action, compact: false),
+                      const SizedBox(height: 10),
+                    ],
+                    if (_actionNote != null) ...[
+                      Text(
+                        _actionNote!,
+                        textAlign: TextAlign.center,
+                        style: AppText.caption,
                       ),
-                      icon: const Icon(Icons.delete, size: 18),
-                      label: const Text('Delete Reservation'),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -291,21 +677,24 @@ class ReservationDetailsScreen extends StatelessWidget {
         const BreadcrumbItem('Reservation Details'),
       ],
       actions: [
-        // Placeholders until the Stage 6 edit / delete workflows exist.
-        OutlinedButton.icon(
-          style: CompactButtons.outlined(),
-          onPressed: () => _showComingSoon(context, 'Editing'),
-          icon: const Icon(Icons.edit_outlined, size: 18),
-          label: const Text('Edit'),
-        ),
-        OutlinedButton.icon(
-          style: CompactButtons.outlined(color: AppColors.cancelled),
-          onPressed: () => _showComingSoon(context, 'Deleting'),
-          icon: const Icon(Icons.delete_outline, size: 18),
-          label: const Text('Delete'),
-        ),
+        for (final action in _actions()) _actionButton(action, compact: true),
       ],
       children: [
+        if (_actionNote != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: AppColors.textMuted,
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_actionNote!, style: AppText.caption)),
+              ],
+            ),
+          ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

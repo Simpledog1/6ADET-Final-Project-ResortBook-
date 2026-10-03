@@ -2,11 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../logic/booking_logic.dart';
+import '../logic/reservation_workflow.dart';
 import '../models/rate.dart';
+import '../models/reservation.dart';
 import '../models/stay_type.dart';
 import '../models/unit.dart';
-import '../services/config_service.dart';
 import '../services/pocketbase_service.dart';
+import '../services/reservation_gateway.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
@@ -19,8 +21,23 @@ import '../widgets/confirm_dialog.dart';
 import '../widgets/desktop_page.dart';
 import '../widgets/responsive.dart';
 
+/// Add Reservation, and Edit Reservation when [reservation] is given.
+///
+/// Both modes use the same form, validation and booking rules. In edit
+/// mode the reservation is reloaded from PocketBase first; the page then
+/// returns `true` after a successful save.
 class AddReservationScreen extends StatefulWidget {
-  const AddReservationScreen({super.key});
+  /// The reservation to edit, or null to add a new one.
+  final Reservation? reservation;
+
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
+  const AddReservationScreen({
+    super.key,
+    this.reservation,
+    this.gateway = const ReservationGateway(),
+  });
 
   @override
   State<AddReservationScreen> createState() => _AddReservationScreenState();
@@ -53,6 +70,19 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   String? _conflictError;
   int _resetCount = 0; // forces the unit dropdown to rebuild after a save
 
+  // ── Edit mode ──
+  /// The reservation being edited, as freshly loaded from PocketBase.
+  Reservation? _original;
+
+  /// The form was filled from [_original] (only done once).
+  bool _prefilled = false;
+
+  /// The user picked another stay type or date. Until then the saved
+  /// start/end times are kept exactly.
+  bool _scheduleTouched = false;
+
+  bool get _isEdit => widget.reservation != null;
+
   @override
   void initState() {
     super.initState();
@@ -74,22 +104,56 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
       _isLoadingConfig = true;
       _loadError = null;
     });
+    final gateway = widget.gateway;
     try {
+      // Adding offers active items only. Editing also loads inactive ones,
+      // so the reservation's own (possibly deactivated) unit and stay type
+      // stay selectable; other inactive ones are filtered out below.
       final results = await Future.wait([
-        ConfigService.getStayTypes(activeOnly: true),
-        ConfigService.getUnits(activeOnly: true),
-        ConfigService.getRates(),
+        gateway.getStayTypes(activeOnly: !_isEdit),
+        gateway.getUnits(activeOnly: !_isEdit),
+        gateway.getRates(),
       ]);
+      final Reservation? fresh = _isEdit
+          ? await gateway.getReservation(widget.reservation!.id)
+          : null;
       if (!mounted) return;
       setState(() {
-        _stayTypes = results[0] as List<StayType>;
-        _units = results[1] as List<Unit>;
+        var stayTypes = results[0] as List<StayType>;
+        var units = results[1] as List<Unit>;
+        if (fresh != null) {
+          stayTypes = ReservationWorkflow.stayTypeOptions(
+            stayTypes,
+            currentStayTypeId: fresh.stayTypeId,
+          );
+          units = ReservationWorkflow.unitOptions(
+            units,
+            currentUnitId: fresh.unitId,
+          );
+          _original = fresh;
+        }
+        _stayTypes = stayTypes;
+        _units = units;
         _rates = results[2] as List<Rate>;
-        // Re-select by id so the selections match the freshly loaded objects.
-        _stayType =
-            _stayTypes.where((s) => s.id == _stayType?.id).firstOrNull ??
-            _stayTypes.firstOrNull;
-        _unit = _units.where((u) => u.id == _unit?.id).firstOrNull;
+
+        if (fresh != null && !_prefilled) {
+          _prefillFrom(fresh);
+        } else {
+          // Re-select by id so the selections match the freshly loaded
+          // objects. (A new reservation starts with the first stay type;
+          // an older reservation being edited may have none.)
+          _stayType =
+              _stayTypes.where((s) => s.id == _stayType?.id).firstOrNull ??
+              (_isEdit ? null : _stayTypes.firstOrNull);
+          _unit = _units.where((u) => u.id == _unit?.id).firstOrNull;
+        }
+
+        // The status may have changed since Details was opened.
+        if (fresh != null && !ReservationWorkflow.canEdit(fresh)) {
+          _loadError =
+              ReservationWorkflow.editBlockedReason(fresh) ??
+              'This reservation can no longer be edited.';
+        }
         _resetCount++;
         _isLoadingConfig = false;
       });
@@ -100,6 +164,21 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
         _loadError = 'Could not load units and stay types: $e';
       });
     }
+  }
+
+  /// Fills the form with the reservation being edited.
+  void _prefillFrom(Reservation r) {
+    _nameController.text = r.guestName;
+    _phoneController.text = r.phone;
+    _emailController.text = r.email;
+    _guestCountController.text = r.guestCount > 0 ? '${r.guestCount}' : '';
+    _notesController.text = r.notes;
+    _stayType = _stayTypes.where((s) => s.id == r.stayTypeId).firstOrNull;
+    _unit = _units.where((u) => u.id == r.unitId).firstOrNull;
+    _checkInDate = DateFormatUtil.dateOnly(r.startAt);
+    _checkOutDate = DateFormatUtil.dateOnly(r.endAt);
+    _scheduleTouched = false;
+    _prefilled = true;
   }
 
   // ── Derived values ─────────────────────────────────────────────────────
@@ -117,6 +196,16 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
       : 1;
 
   StayWindow? get _window {
+    // Editing without touching the stay type / dates: keep the saved times
+    // exactly (the stay type's times may have changed since booking).
+    final original = _original;
+    if (_isEdit && original != null && !_scheduleTouched) {
+      return StayWindow(
+        start: original.startAt,
+        end: original.endAt,
+        nights: BookingLogic.nightsBetween(original.startAt, original.endAt),
+      );
+    }
     if (_stayType == null || _checkInDate == null) return null;
     if (_needsCheckOutDate && _checkOutDate == null) return null;
     return BookingLogic.computeWindow(
@@ -146,6 +235,49 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   bool get _isRateMissing =>
       _unit != null && _stayType != null && _rate == null;
 
+  /// The values currently in the form, for [ReservationWorkflow.planEdit].
+  ReservationDraft? get _draft {
+    final original = _original;
+    if (original == null) return null;
+    final window = _window;
+    return ReservationDraft(
+      guestName: _nameController.text.trim(),
+      phone: _phoneController.text.trim(),
+      email: _emailController.text.trim(),
+      // An empty field counts as 0 (invalid) unless the old record had no
+      // guest count either (older reservations).
+      guestCount: int.tryParse(_guestCountController.text) ?? 0,
+      notes: _notesController.text.trim(),
+      unitId: _unit?.id ?? original.unitId,
+      stayTypeId: _stayType?.id ?? original.stayTypeId,
+      startAt: window?.start ?? original.startAt,
+      endAt: window?.end ?? original.endAt,
+    );
+  }
+
+  /// What the edit changes (null when adding).
+  EditPlan? get _editPlan {
+    final original = _original;
+    final draft = _draft;
+    if (original == null || draft == null) return null;
+    return ReservationWorkflow.planEdit(original, draft);
+  }
+
+  /// The unit, stay type or dates changed: availability and price are
+  /// checked again. Always true when adding.
+  bool get _needsRepricing => !_isEdit || (_editPlan?.needsRepricing ?? false);
+
+  /// Missing rate only blocks saving when a price has to be calculated.
+  bool get _rateBlocksSave => _isRateMissing && _needsRepricing;
+
+  /// Checked In: unit, stay type and dates are read-only.
+  bool get _scheduleLocked {
+    final original = _original;
+    return _isEdit &&
+        original != null &&
+        ReservationWorkflow.editAccess(original) == EditAccess.guestDetailsOnly;
+  }
+
   String get _missingRateMessage {
     if (_unit != null && _unit!.unitTypeId.isEmpty) {
       return '${_unit!.name} has no unit type, so no rate can be found. '
@@ -160,6 +292,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
   void _selectStayType(StayType stayType) {
     setState(() {
+      if (_stayType?.id != stayType.id) _scheduleTouched = true;
       _stayType = stayType;
       _conflictError = null;
       // Keep the check-out date valid for multi-night stays.
@@ -173,13 +306,22 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
   Future<void> _selectDate(BuildContext context, bool isCheckIn) async {
     final today = DateFormatUtil.dateOnly(DateTime.now());
+    // When editing a booking that started in the past, its own date stays
+    // selectable.
+    final original = _original;
+    final earliest =
+        (_isEdit && original != null && original.startAt.isBefore(today))
+        ? DateFormatUtil.dateOnly(original.startAt)
+        : today;
     final DateTime first;
     final DateTime initial;
     if (isCheckIn) {
-      first = today;
-      initial = _checkInDate ?? today;
+      first = earliest;
+      initial = (_checkInDate != null && !_checkInDate!.isBefore(first))
+          ? _checkInDate!
+          : first;
     } else {
-      first = (_checkInDate ?? today).add(const Duration(days: 1));
+      first = (_checkInDate ?? earliest).add(const Duration(days: 1));
       initial = (_checkOutDate != null && _checkOutDate!.isAfter(first))
           ? _checkOutDate!
           : first;
@@ -194,6 +336,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
     if (picked == null) return;
 
     setState(() {
+      _scheduleTouched = true;
       if (isCheckIn) {
         _checkInDate = picked;
         // Auto-adjust checkout date if it's not after the new check-in date
@@ -336,6 +479,153 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
     }
   }
 
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Edit mode: saves only what changed (see [ReservationWorkflow]).
+  ///
+  /// * Guest details / notes: saved as they are.
+  /// * Guest count: capacity is checked; the price stays the same.
+  /// * Unit, stay type or dates: availability is checked again (ignoring
+  ///   this reservation), the price is recalculated with the current rate
+  ///   and every snapshot is replaced.
+  Future<void> _saveChanges() async {
+    final original = _original;
+    if (original == null) return;
+
+    setState(() => _submitted = true);
+    if (!_formKey.currentState!.validate()) {
+      _showMessage('Please fix the highlighted fields.');
+      return;
+    }
+
+    // Stay type or dates were changed but no valid time range results.
+    if (_scheduleTouched && _window == null) {
+      _showMessage(
+        _stayType == null
+            ? 'Choose a stay type before changing the dates of this older '
+                  'reservation.'
+            : (_blockingProblem() ?? 'Check the stay type and dates.'),
+      );
+      return;
+    }
+
+    final draft = _draft!;
+    final plan = ReservationWorkflow.planEdit(original, draft);
+    if (!plan.isAllowed) {
+      _showMessage(plan.error!);
+      return;
+    }
+    if (!plan.hasChanges) {
+      _showMessage('Nothing to save: no changes were made.');
+      return;
+    }
+
+    final selectionProblem = ReservationWorkflow.selectionError(
+      original: original,
+      unit: _unit,
+      stayType: _stayType,
+    );
+    if (selectionProblem != null) {
+      _showMessage(selectionProblem);
+      return;
+    }
+
+    final capacityProblem = ReservationWorkflow.capacityError(
+      plan,
+      draft.guestCount,
+      _unit,
+    );
+    if (capacityProblem != null) {
+      _showMessage(capacityProblem);
+      return;
+    }
+
+    final unit = _unit;
+    final stayType = _stayType;
+    final window = _window;
+    PriceQuote? quote;
+    if (plan.needsRepricing) {
+      final String? problem;
+      if (unit == null) {
+        problem = 'Select a unit.';
+      } else if (stayType == null) {
+        problem = 'Select a stay type.';
+      } else if (_rate == null) {
+        problem = _missingRateMessage; // block: no partial update
+      } else if (_quote == null || window == null) {
+        problem = 'Check the stay type and dates.';
+      } else {
+        problem = null;
+      }
+      if (problem != null) {
+        _showMessage(problem);
+        return;
+      }
+      quote = _quote;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _conflictError = null;
+    });
+
+    try {
+      if (plan.needsAvailabilityCheck) {
+        // Same two-step check as a new booking, ignoring this reservation.
+        final candidates = await widget.gateway.findOverlapping(
+          unitId: unit!.id,
+          start: window!.start,
+          end: window.end,
+          excludeReservationId: original.id,
+        );
+        final conflicts = BookingLogic.findConflicts(
+          unitId: unit.id,
+          window: window,
+          existing: candidates,
+          excludeReservationId: original.id,
+        );
+        if (conflicts.isNotEmpty) {
+          final c = conflicts.first;
+          if (!mounted) return;
+          setState(() {
+            _conflictError =
+                '${unit.name} is already booked from '
+                '${DateFormatUtil.shortWithTime(c.startAt)} to '
+                '${DateFormatUtil.shortWithTime(c.endAt)}'
+                '${c.guestName.isEmpty ? '' : ' (${c.guestName})'}.';
+            _isSubmitting = false;
+          });
+          return;
+        }
+      }
+
+      final body = ReservationWorkflow.buildUpdateBody(
+        plan: plan,
+        draft: draft,
+        unit: unit,
+        stayType: stayType,
+        quote: quote,
+      );
+      await widget.gateway.updateReservation(original.id, body);
+      if (!mounted) return;
+
+      _showMessage(
+        quote == null
+            ? 'Reservation updated.'
+            : 'Reservation updated · ${CurrencyFormat.peso(quote.total)}',
+      );
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      _showMessage('Error saving changes: $e');
+    }
+  }
+
   // ── UI ─────────────────────────────────────────────────────────────────
   //
   // The phone and desktop layouts arrange the same field widgets below;
@@ -344,8 +634,79 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   bool get _canSave =>
       !_isSubmitting &&
       _conflictError == null &&
-      !_isRateMissing &&
+      !_rateBlocksSave &&
       _loadError == null;
+
+  /// Read-only look for the unit / stay type / date fields of a checked-in
+  /// reservation.
+  Widget _lockable(Widget child, String keyName) {
+    if (!_scheduleLocked) return child;
+    return IgnorePointer(
+      key: ValueKey(keyName),
+      child: Opacity(opacity: 0.55, child: child),
+    );
+  }
+
+  /// Notes shown under "Stay Details" in edit mode, or null.
+  Widget? _stayDetailsNote() {
+    final original = _original;
+    if (!_isEdit || original == null) return null;
+    String? text;
+    Key? key;
+    if (_scheduleLocked) {
+      text =
+          "Unit, stay type and dates can't be changed while the guest is "
+          'checked in.';
+      key = const ValueKey('schedule-locked-note');
+    } else if (original.isLegacy && _stayType == null) {
+      text =
+          'Older reservation: no stay type was saved (shown as Overnight). '
+          'Choose one only if you change the unit or dates.';
+    }
+    if (text == null) return null;
+    return Padding(
+      key: key,
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            _scheduleLocked ? Icons.lock_outline : Icons.info_outline,
+            size: 16,
+            color: AppColors.textMuted,
+          ),
+          const SizedBox(width: 6),
+          Expanded(child: Text(text, style: AppText.caption)),
+        ],
+      ),
+    );
+  }
+
+  /// Price area: missing-rate warning, the new quote (with "Price will be
+  /// recalculated" when editing), the saved price, or nothing yet.
+  Widget? _priceSection({bool accent = false}) {
+    if (_rateBlocksSave) return _rateBanner(accent: accent);
+    final quote = _quote;
+    final original = _original;
+    if (!_isEdit) return quote == null ? null : _PriceSummary(quote: quote);
+    if (original == null) return null;
+
+    if (_needsRepricing) {
+      if (quote == null) return null;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _PriceSummary(quote: quote),
+          const SizedBox(height: 8),
+          _PriceChangeNote(
+            oldTotal: original.totalAmount,
+            newTotal: quote.total,
+          ),
+        ],
+      );
+    }
+    return _SavedPriceNote(total: original.totalAmount);
+  }
 
   /// Cancel: back to the previous page, or — when Add Reservation was opened
   /// straight from the desktop sidebar — to the Dashboard.
@@ -455,8 +816,13 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
         decoration: decoration,
         // Rebuild so the stepper buttons enable / disable while typing.
         onChanged: stepper ? (_) => setState(() {}) : null,
-        validator: (v) =>
-            BookingLogic.validateGuestCount(int.tryParse(v ?? ''), _unit),
+        validator: (v) {
+          // Editing: only checked when the guest count or unit changed, so
+          // an old booking isn't blocked by a capacity lowered later.
+          final plan = _editPlan;
+          if (plan != null && !plan.needsCapacityCheck) return null;
+          return BookingLogic.validateGuestCount(int.tryParse(v ?? ''), _unit);
+        },
       ),
     );
   }
@@ -469,10 +835,13 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
               icon: Icons.schedule,
               text: 'No active stay types found.',
             )
-          : _StayTypeSelector(
-              stayTypes: _stayTypes,
-              selected: _stayType,
-              onSelected: _selectStayType,
+          : _lockable(
+              _StayTypeSelector(
+                stayTypes: _stayTypes,
+                selected: _stayType,
+                onSelected: _selectStayType,
+              ),
+              'locked-stay-type',
             ),
     );
   }
@@ -485,38 +854,44 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
               icon: Icons.meeting_room,
               text: 'No active units found.',
             )
-          : DropdownButtonFormField<Unit>(
-              key: ValueKey('unit-$_resetCount'),
-              decoration: AppInputs.decoration(
-                hint: 'Select a unit',
-                icon: Icons.meeting_room,
+          : _lockable(
+              DropdownButtonFormField<Unit>(
+                key: ValueKey('unit-$_resetCount'),
+                decoration: AppInputs.decoration(
+                  hint: 'Select a unit',
+                  icon: Icons.meeting_room,
+                ),
+                style: AppText.body,
+                isExpanded: true,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: AppColors.textSecondary,
+                ),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                dropdownColor: AppColors.surface,
+                initialValue: _unit,
+                items: _units.map((unit) {
+                  final capacity = unit.capacity > 0
+                      ? ' · up to ${unit.capacity}'
+                      : '';
+                  final inactive = unit.isActive ? '' : ' (inactive)';
+                  return DropdownMenuItem(
+                    value: unit,
+                    child: Text(
+                      '${unit.displayLabel}$capacity$inactive',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: _scheduleLocked
+                    ? null
+                    : (val) => setState(() {
+                        _unit = val;
+                        _conflictError = null; // re-check on save
+                      }),
+                validator: (v) => v == null ? 'Select a unit.' : null,
               ),
-              style: AppText.body,
-              isExpanded: true,
-              icon: const Icon(
-                Icons.keyboard_arrow_down,
-                color: AppColors.textSecondary,
-              ),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              dropdownColor: AppColors.surface,
-              initialValue: _unit,
-              items: _units.map((unit) {
-                final capacity = unit.capacity > 0
-                    ? ' · up to ${unit.capacity}'
-                    : '';
-                return DropdownMenuItem(
-                  value: unit,
-                  child: Text(
-                    '${unit.displayLabel}$capacity',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) => setState(() {
-                _unit = val;
-                _conflictError = null; // re-check on save
-              }),
-              validator: (v) => v == null ? 'Select a unit.' : null,
+              'locked-unit',
             ),
     );
   }
@@ -524,12 +899,17 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   Widget _checkInField() {
     return FieldLabel(
       text: 'Check-in Date',
-      child: PickerField(
-        value: _checkInDate == null ? null : DateFormatUtil.long(_checkInDate!),
-        placeholder: 'Select check-in date',
-        highlightError:
-            _conflictError != null || (_submitted && _checkInDate == null),
-        onTap: () => _selectDate(context, true),
+      child: _lockable(
+        PickerField(
+          value: _checkInDate == null
+              ? null
+              : DateFormatUtil.long(_checkInDate!),
+          placeholder: 'Select check-in date',
+          highlightError:
+              _conflictError != null || (_submitted && _checkInDate == null),
+          onTap: () => _selectDate(context, true),
+        ),
+        'locked-check-in',
       ),
     );
   }
@@ -537,14 +917,17 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   Widget _checkOutField() {
     return FieldLabel(
       text: 'Check-out Date',
-      child: PickerField(
-        value: _checkOutDate == null
-            ? null
-            : DateFormatUtil.long(_checkOutDate!),
-        placeholder: 'Select check-out date',
-        highlightError:
-            _conflictError != null || (_submitted && _checkOutDate == null),
-        onTap: () => _selectDate(context, false),
+      child: _lockable(
+        PickerField(
+          value: _checkOutDate == null
+              ? null
+              : DateFormatUtil.long(_checkOutDate!),
+          placeholder: 'Select check-out date',
+          highlightError:
+              _conflictError != null || (_submitted && _checkOutDate == null),
+          onTap: () => _selectDate(context, false),
+        ),
+        'locked-check-out',
       ),
     );
   }
@@ -566,7 +949,9 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   Widget _saveButton({ButtonStyle? style}) {
     return FilledButton.icon(
       style: style,
-      onPressed: _canSave ? _submitReservation : null,
+      onPressed: _canSave
+          ? (_isEdit ? _saveChanges : _submitReservation)
+          : null,
       icon: _isSubmitting
           ? const SizedBox(
               width: 18,
@@ -577,17 +962,20 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
               ),
             )
           : const Icon(Icons.save, size: 18),
-      label: const Text('Save Reservation'),
+      label: Text(_isEdit ? 'Save Changes' : 'Save Reservation'),
     );
   }
 
   Widget? _loadErrorBanner({bool accent = false}) {
     if (_loadError == null) return null;
+    final original = _original;
+    final editBlocked =
+        original != null && !ReservationWorkflow.canEdit(original);
     return _NoticeBanner(
-      title: 'Connection problem',
+      title: editBlocked ? 'Editing not available' : 'Connection problem',
       message: _loadError!,
-      actionLabel: 'Retry',
-      onAction: _loadConfiguration,
+      actionLabel: editBlocked ? null : 'Retry',
+      onAction: editBlocked ? null : _loadConfiguration,
       accent: accent,
     );
   }
@@ -602,7 +990,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   }
 
   Widget? _rateBanner({bool accent = false}) {
-    if (!_isRateMissing) return null;
+    if (!_rateBlocksSave) return null;
     return _NoticeBanner(
       title: 'No Rate Set',
       message: _missingRateMessage,
@@ -620,13 +1008,15 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
   Widget _buildMobile(BuildContext context) {
     final window = _window;
-    final quote = _quote;
     final loadError = _loadErrorBanner();
     final conflict = _conflictBanner();
-    final rateBanner = _rateBanner();
+    final price = _priceSection();
+    final stayNote = _stayDetailsNote();
 
     return Scaffold(
-      appBar: const AppHeader(title: 'Add Reservation'),
+      appBar: AppHeader(
+        title: _isEdit ? 'Edit Reservation' : 'Add Reservation',
+      ),
       body: _isLoadingConfig
           ? const Center(child: CircularProgressIndicator())
           : ResponsiveContent(
@@ -663,6 +1053,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
                       // ── Stay details ──────────────────────────────────
                       const FormSectionHeader('Stay Details', topPadding: 20),
+                      if (stayNote != null) stayNote,
                       const SizedBox(height: 12),
                       _stayTypeField(),
                       const SizedBox(height: 12),
@@ -679,7 +1070,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
                         const SizedBox(height: 12),
                         _checkOutField(),
                       ],
-                      if (window != null) ...[
+                      if (window != null && _stayType != null) ...[
                         const SizedBox(height: 12),
                         _ScheduleSummary(window: window, stayType: _stayType!),
                       ],
@@ -691,13 +1082,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
                       ],
 
                       // ── Price ─────────────────────────────────────────
-                      if (rateBanner != null) ...[
-                        const SizedBox(height: 12),
-                        rateBanner,
-                      ] else if (quote != null) ...[
-                        const SizedBox(height: 12),
-                        _PriceSummary(quote: quote),
-                      ],
+                      if (price != null) ...[const SizedBox(height: 12), price],
 
                       // ── Notes ─────────────────────────────────────────
                       const FormSectionHeader('Notes', topPadding: 20),
@@ -738,9 +1123,14 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   }
 
   Widget _buildDesktop(BuildContext context) {
+    final guest = widget.reservation?.guestName ?? '';
     return DesktopPage(
-      title: 'Add Reservation',
-      subtitle: 'Book a unit for a guest. Times come from the stay type.',
+      title: _isEdit ? 'Edit Reservation' : 'Add Reservation',
+      subtitle: _isEdit
+          ? (guest.isEmpty
+                ? 'Update this booking.'
+                : 'Update the booking for $guest.')
+          : 'Book a unit for a guest. Times come from the stay type.',
       maxWidth: _desktopWidth,
       breadcrumbs: [
         BreadcrumbItem(
@@ -748,7 +1138,12 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
           onTap: () =>
               DesktopShellScope.navigate(context, ShellSection.reservations),
         ),
-        const BreadcrumbItem('Add Reservation'),
+        if (_isEdit)
+          BreadcrumbItem(
+            'Reservation Details',
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+        BreadcrumbItem(_isEdit ? 'Edit Reservation' : 'Add Reservation'),
       ],
       children: [
         if (_isLoadingConfig)
@@ -773,26 +1168,28 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
   Widget _buildDesktopForm(BuildContext context) {
     final window = _window;
-    final quote = _quote;
     final loadError = _loadErrorBanner(accent: true);
     final conflict = _conflictBanner(accent: true);
-    final rateBanner = _rateBanner(accent: true);
+    final stayNote = _stayDetailsNote();
 
     final Widget checkOut = _needsCheckOutDate
         ? _checkOutField()
         : FieldLabel(
             text: 'Check-out',
-            child: _EmptyHint(
-              icon: Icons.logout,
-              text: window != null
-                  ? DateFormatUtil.shortWithTime(window.end)
-                  : 'Set by the stay type',
+            child: _lockable(
+              _EmptyHint(
+                icon: Icons.logout,
+                text: window != null
+                    ? DateFormatUtil.shortWithTime(window.end)
+                    : 'Set by the stay type',
+              ),
+              'locked-check-out',
             ),
           );
 
-    // Price column: rate warning, quote, or nothing yet.
-    final Widget? price =
-        rateBanner ?? (quote != null ? _PriceSummary(quote: quote) : null);
+    // Price column: rate warning, quote, saved price, or nothing yet.
+    final price = _priceSection(accent: true);
+    final hasSchedule = window != null && _stayType != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -811,6 +1208,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
         // ── Stay details ──
         const FormSectionHeader('Stay Details', topPadding: AppSpacing.lg),
+        if (stayNote != null) stayNote,
         const SizedBox(height: AppSpacing.md),
         _pair(_stayTypeField(), _unitField()),
 
@@ -820,10 +1218,10 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
         _pair(_checkInField(), checkOut),
 
         // ── Summary: schedule and price side by side ──
-        if (window != null || price != null) ...[
+        if (hasSchedule || price != null) ...[
           const SizedBox(height: AppSpacing.md),
           _pair(
-            window != null
+            hasSchedule
                 ? _ScheduleSummary(window: window, stayType: _stayType!)
                 : const SizedBox.shrink(),
             price ?? const SizedBox.shrink(),
@@ -936,7 +1334,9 @@ class _StayTypeOption extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                stayType.name,
+                stayType.isActive
+                    ? stayType.name
+                    : '${stayType.name} (inactive)',
                 textAlign: TextAlign.center,
                 style: AppText.valueStrong.copyWith(color: fg, height: 1.3),
               ),
@@ -1045,6 +1445,87 @@ class _PriceSummary extends StatelessWidget {
           ),
           Text(
             CurrencyFormat.peso(quote.total),
+            style: AppText.cardTitle.copyWith(
+              fontSize: 20,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Edit mode: "Price will be recalculated: ₱old → ₱new".
+class _PriceChangeNote extends StatelessWidget {
+  final double oldTotal;
+  final double newTotal;
+
+  const _PriceChangeNote({required this.oldTotal, required this.newTotal});
+
+  @override
+  Widget build(BuildContext context) {
+    final oldText = oldTotal > 0 ? CurrencyFormat.peso(oldTotal) : 'no price';
+    return Container(
+      key: const ValueKey('price-change-note'),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.primaryTint,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: AppColors.primaryTintBorder),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.sync_alt, size: 16, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Price will be recalculated: $oldText → '
+              '${CurrencyFormat.peso(newTotal)}',
+              style: AppText.body.copyWith(
+                fontSize: 13,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Edit mode without schedule changes: the saved price is kept.
+class _SavedPriceNote extends StatelessWidget {
+  final double total;
+
+  const _SavedPriceNote({required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('SAVED TOTAL', style: AppText.overline),
+                SizedBox(height: 2),
+                Text(
+                  'Kept unless the unit, stay type or dates change.',
+                  style: AppText.bodySecondary,
+                ),
+              ],
+            ),
+          ),
+          Text(
+            total > 0 ? CurrencyFormat.peso(total) : '—',
             style: AppText.cardTitle.copyWith(
               fontSize: 20,
               color: AppColors.primary,
