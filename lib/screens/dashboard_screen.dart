@@ -8,6 +8,7 @@ import '../widgets/app_header.dart';
 import '../widgets/reservation_cards.dart';
 import 'add_reservation_screen.dart';
 import 'calendar_screen.dart';
+import 'manage/manage_resort_screen.dart';
 import 'reservation_details_screen.dart';
 import 'reservation_list_screen.dart';
 
@@ -131,6 +132,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: Icons.calendar_today_outlined,
               label: 'View Calendar',
               onPressed: () => _open(const CalendarScreen()),
+            ),
+            const SizedBox(height: 12),
+            // Resort configuration (Stage 4). Outlined to keep the three
+            // reservation actions visually primary.
+            OutlinedButton.icon(
+              onPressed: () => _open(const ManageResortScreen()),
+              icon: const Icon(Icons.tune, size: 20),
+              label: Text(
+                'Manage Resort',
+                style: AppText.button.copyWith(fontSize: 14),
+              ),
             ),
           ],
         ),

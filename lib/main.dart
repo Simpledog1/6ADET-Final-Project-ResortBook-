@@ -4,7 +4,7 @@ import 'package:device_preview_screenshot/device_preview_screenshot.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'theme/app_theme.dart';
-import 'screens/dashboard_screen.dart';
+import 'widgets/app_shell.dart';
 
 void main() {
   runApp(
@@ -45,7 +45,8 @@ class ResortBookApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
-      home: const DashboardScreen(),
+      // Responsive root: mobile/tablet flow or the desktop sidebar shell.
+      home: const AppShell(),
       debugShowCheckedModeBanner: false,
     );
   }
