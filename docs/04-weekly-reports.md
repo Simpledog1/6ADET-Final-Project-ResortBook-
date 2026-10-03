@@ -74,19 +74,23 @@
 * Completed Phase 3 (Dashboard): Built the responsive dashboard UI using `LayoutBuilder` to automatically switch between a mobile `BottomNavigationBar` and a desktop `NavigationRail`.
 * Completed Phase 4 (Add Reservation): Created the form for capturing guest details and schedules, and wired up the database write operations.
 * Implemented the client-side date-overlap validation logic to actively prevent conflicting room bookings.
+* Configured native Windows desktop compilation by installing the Visual Studio C++ toolchain to bypass web browser file system restrictions.
+* Integrated `device_preview_screenshot` to export automated, accurately framed cross-platform documentation assets directly to the local drive.
 
 **Why**
 * Restoring the cross-platform scope ensures the application fulfills the original requirements, utilizing `DevicePreview` to verify both Windows desktop and mobile layouts simultaneously.
 * The client-side date validation is a critical business rule; blocking the database write entirely when `(New Check-In < Existing Check-Out) AND (New Check-Out > Existing Check-In)` prevents the need for complex server-side rollbacks.
 * Relying on PocketBase's native Relation field for the `assignedRoomId` handled the database constraints automatically, avoiding manual SQL foreign key errors.
+* Compiling to native Windows was mandatory because running the app in a web browser sandbox completely blocked the `dart:io` operations required to save screenshot files.
 
 **What broke or what I got stuck on**
 * Encountered an architecture mismatch during the initial PocketBase setup. I originally downloaded the `arm64` executable, which Windows 11 blocked from running on my AMD Ryzen (x64) processor. I resolved this by deleting the directory and running the correct `amd64` executable from the command prompt.
 * Briefly hit a compilation error when extracting the `DashboardContent` widget because it was accidentally placed inside the state class, but this was quickly fixed by moving it to the root file level.
+* Received a `Platform._operatingSystem` unsupported error and a missing Visual Studio toolchain error when trying to export screenshots. I had to stop development to download and install the 5GB+ Visual Studio 2022 C++ compiler and enable Windows Developer Mode to fix it.
+* Encountered a Git `Permission denied` error when trying to commit my work because background cache files in the newly generated `.vs/` folder were locked. I fixed this by adding `.vs/` to the `.gitignore` file.
 
 **What is left**
 * Phase 5: Building the searchable Reservation List screen to replace the current placeholder widget and display the live data from PocketBase.
 * Phase 6: Creating the Reservation Details view to show expanded information and status badges.
 * Phase 7: Building the visual Calendar interface to map reservations to specific dates.
 * Phases 8 & 9: Final end-to-end integration testing and viewport padding cleanup.
-
