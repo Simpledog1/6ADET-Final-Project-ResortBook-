@@ -3,27 +3,71 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/app_card.dart';
 import '../../widgets/app_header.dart';
 import '../../widgets/confirm_dialog.dart';
+import '../../widgets/desktop_page.dart';
+import '../../widgets/filter_controls.dart';
 import '../../widgets/responsive.dart';
+import '../../widgets/state_cards.dart';
 
-/// Page frame for a Manage Resort screen: header, pull-to-refresh and a
-/// content column limited to a comfortable width.
+// LoadErrorCard now lives in widgets/state_cards.dart; re-exported so the
+// Manage screens keep working unchanged.
+export '../../widgets/state_cards.dart' show LoadErrorCard;
+
+/// Shared search box (widgets/filter_controls.dart).
+typedef ManageSearchField = SearchField;
+
+/// Shared filter chips (widgets/filter_controls.dart).
+typedef ManageFilterChips<T> = FilterChipBar<T>;
+
+/// Shared empty-state card (widgets/state_cards.dart).
+typedef ManageEmptyCard = ActionEmptyCard;
+
+/// Page frame for a Manage Resort screen.
+///
+/// * Desktop (inside the sidebar shell): [DesktopPage] with the breadcrumb
+///   "Manage Resort › [title]" ("Dashboard › Manage Resort" for the hub),
+///   the title, [intro] as the subtitle and the Add button
+///   ([addLabel] / [onAdd]) in the header.
+/// * Phone / tablet: unchanged — header bar, then [intro] and a full-width
+///   (phone) or right-aligned (tablet) Add button above [children].
 class ManagePage extends StatelessWidget {
   final String title;
   final Future<void> Function() onRefresh;
   final List<Widget> children;
+
+  /// Short explanation of the page (subtitle on desktop).
+  final String? intro;
+
+  /// Optional "Add …" action. Shown only when both are set.
+  final String? addLabel;
+  final VoidCallback? onAdd;
+
+  /// True for the Manage Resort hub itself: its desktop breadcrumb starts
+  /// at the Dashboard instead of "Manage Resort".
+  final bool isHub;
 
   const ManagePage({
     super.key,
     required this.title,
     required this.onRefresh,
     required this.children,
+    this.intro,
+    this.addLabel,
+    this.onAdd,
+    this.isHub = false,
   });
+
+  /// Whether Manage pages use the desktop page layout here.
+  static bool usesDesktopLayout(BuildContext context) =>
+      DesktopShellScope.isInside(context);
+
+  bool get _hasAdd => addLabel != null && onAdd != null;
 
   @override
   Widget build(BuildContext context) {
+    if (usesDesktopLayout(context)) return _buildDesktop(context);
+
     final maxWidth = Breakpoints.isDesktop(context) ? 1200.0 : 720.0;
     return Scaffold(
       appBar: AppHeader(title: title),
@@ -36,17 +80,57 @@ class ManagePage extends StatelessWidget {
             ResponsiveContent(
               maxWidth: maxWidth,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: children,
+                  children: [
+                    if (intro != null) ManageIntro(intro!),
+                    if (_hasAdd) ...[
+                      ManageAddButton(label: addLabel!, onPressed: onAdd),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+                    ...children,
+                  ],
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDesktop(BuildContext context) {
+    return DesktopPage(
+      title: title,
+      subtitle: intro,
+      onRefresh: onRefresh,
+      breadcrumbs: [
+        isHub
+            ? BreadcrumbItem(
+                'Dashboard',
+                onTap: () =>
+                    DesktopShellScope.navigate(context, ShellSection.dashboard),
+              )
+            : BreadcrumbItem(
+                'Manage Resort',
+                onTap: () => DesktopShellScope.navigate(
+                  context,
+                  ShellSection.manageResort,
+                ),
+              ),
+        BreadcrumbItem(title),
+      ],
+      actions: [
+        if (_hasAdd)
+          FilledButton.icon(
+            style: CompactButtons.filled(),
+            onPressed: onAdd,
+            icon: const Icon(Icons.add, size: 20),
+            label: Text(addLabel!),
+          ),
+      ],
+      children: children,
     );
   }
 }
@@ -83,107 +167,6 @@ class ManageAddButton extends StatelessWidget {
     );
     if (Breakpoints.isPhone(context)) return button;
     return Align(alignment: Alignment.centerRight, child: button);
-  }
-}
-
-/// Rounded search box (same look as the Reservation List search).
-class ManageSearchField extends StatelessWidget {
-  final String hint;
-  final ValueChanged<String> onChanged;
-
-  const ManageSearchField({
-    super.key,
-    required this.hint,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(AppSpacing.radiusSm);
-    OutlineInputBorder border(Color color) => OutlineInputBorder(
-          borderRadius: radius,
-          borderSide: BorderSide(color: color),
-        );
-
-    return SizedBox(
-      height: AppSpacing.searchHeight,
-      child: TextField(
-        style: AppText.body,
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: AppText.body.copyWith(color: AppColors.textMuted),
-          prefixIcon: const Icon(
-            Icons.search,
-            size: 20,
-            color: AppColors.textMuted,
-          ),
-          filled: true,
-          fillColor: AppColors.surface,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 13.5),
-          border: border(AppColors.border),
-          enabledBorder: border(AppColors.border),
-          focusedBorder: border(AppColors.primary),
-        ),
-      ),
-    );
-  }
-}
-
-/// Pill-shaped filter options (Figma "All / Reserved / …" chips).
-class ManageFilterChips<T> extends StatelessWidget {
-  final List<T> values;
-  final List<String> labels;
-  final T selected;
-  final ValueChanged<T> onSelected;
-
-  const ManageFilterChips({
-    super.key,
-    required this.values,
-    required this.labels,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (var i = 0; i < values.length; i++)
-          _chip(labels[i], values[i] == selected, () => onSelected(values[i])),
-      ],
-    );
-  }
-
-  Widget _chip(String label, bool isSelected, VoidCallback onTap) {
-    final radius = BorderRadius.circular(999);
-    return Material(
-      color: isSelected ? AppColors.primary : AppColors.surface,
-      borderRadius: radius,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
-            ),
-          ),
-          child: Text(
-            label,
-            style: AppText.value.copyWith(
-              fontSize: 13,
-              color: isSelected ? Colors.white : AppColors.textPrimary,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -269,8 +252,8 @@ class ManageActionMenu extends StatelessWidget {
                   color: actions[i].onPressed == null
                       ? AppColors.textDisabled
                       : (actions[i].destructive
-                          ? AppColors.cancelled
-                          : AppColors.textSecondary),
+                            ? AppColors.cancelled
+                            : AppColors.textSecondary),
                 ),
                 const SizedBox(width: 12),
                 Flexible(
@@ -292,90 +275,6 @@ class ManageActionMenu extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-/// Error card with a Retry button.
-class LoadErrorCard extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const LoadErrorCard({
-    super.key,
-    required this.message,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.cloud_off_outlined,
-            size: 28,
-            color: AppColors.textMuted,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: AppText.bodySecondary,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          OutlinedButton.icon(
-            style: CompactButtons.outlined(),
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Empty state card with an optional action button.
-class ManageEmptyCard extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  const ManageEmptyCard({
-    super.key,
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        children: [
-          Icon(icon, size: 28, color: AppColors.textMuted),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: AppText.bodySecondary,
-          ),
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            FilledButton.icon(
-              style: CompactButtons.filled(),
-              onPressed: onAction,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(actionLabel!),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

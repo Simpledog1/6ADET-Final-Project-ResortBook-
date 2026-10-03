@@ -83,26 +83,25 @@ class _ManageResortScreenState extends State<ManageResortScreen> {
   }
 
   Future<void> _open(ConfigSection section) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => _screenFor(section)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => _screenFor(section)));
     if (mounted) _load(); // counts may have changed
   }
 
-  String _activeOfTotal(int active, int total) => '$active active / $total total';
+  String _activeOfTotal(int active, int total) =>
+      '$active active / $total total';
 
   @override
   Widget build(BuildContext context) {
     return ManagePage(
       title: 'Manage Resort',
       onRefresh: _load,
-      children: [
-        const ManageIntro(
+      intro:
           'Set up what your resort offers. These settings drive the units, '
           'stay types and prices available when adding reservations.',
-        ),
-        ..._buildContent(),
-      ],
+      isHub: true,
+      children: [..._buildContent()],
     );
   }
 
@@ -193,10 +192,12 @@ class _ManageResortScreenState extends State<ManageResortScreen> {
       stayTypes: _stayTypes,
       rates: _rates,
     );
-    final missingRates =
-        issues.where((i) => i.section == ConfigSection.rates).toList();
-    final otherIssues =
-        issues.where((i) => i.section != ConfigSection.rates).toList();
+    final missingRates = issues
+        .where((i) => i.section == ConfigSection.rates)
+        .toList();
+    final otherIssues = issues
+        .where((i) => i.section != ConfigSection.rates)
+        .toList();
     final shownRates = missingRates.take(_maxMissingRatesShown).toList();
     final hiddenRates = missingRates.length - shownRates.length;
 
@@ -235,7 +236,8 @@ class _ManageResortScreenState extends State<ManageResortScreen> {
             ),
           if (hiddenRates > 0)
             _IssueRow(
-              message: 'and $hiddenRates more missing '
+              message:
+                  'and $hiddenRates more missing '
                   'rate${hiddenRates == 1 ? '' : 's'}',
               actionLabel: 'Go to Rates',
               onAction: () => _open(ConfigSection.rates),

@@ -138,9 +138,7 @@ class ReservationListCard extends StatelessWidget {
               if (r.hasTotal) ...[
                 Text(
                   CurrencyFormat.peso(r.totalAmount),
-                  style: AppText.valueStrong.copyWith(
-                    color: AppColors.primary,
-                  ),
+                  style: AppText.valueStrong.copyWith(color: AppColors.primary),
                 ),
                 const SizedBox(width: 4),
               ],
@@ -205,12 +203,7 @@ class CalendarReservationCard extends StatelessWidget {
                 color: AppColors.primary,
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  r.rangeLine,
-                  style: AppText.value,
-                ),
-              ),
+              Expanded(child: Text(r.rangeLine, style: AppText.value)),
             ],
           ),
         ],

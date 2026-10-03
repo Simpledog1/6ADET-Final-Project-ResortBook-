@@ -115,8 +115,7 @@ class ConfigRules {
     if (!isValidTime(checkInTime)) return 'Choose a check-in time.';
     if (!isValidTime(checkOutTime)) return 'Choose a check-out time.';
 
-    if (!endsNextDay &&
-        minutesOf(checkOutTime) <= minutesOf(checkInTime)) {
+    if (!endsNextDay && minutesOf(checkOutTime) <= minutesOf(checkInTime)) {
       return 'For a same-day stay, check-out must be after check-in. '
           'Turn on "Ends next day" if guests leave the following day.';
     }
@@ -140,8 +139,7 @@ class ConfigRules {
   static bool canDeleteUnit(int reservationCount) => reservationCount == 0;
 
   /// A stay type can be deleted only when no reservation references it.
-  static bool canDeleteStayType(int reservationCount) =>
-      reservationCount == 0;
+  static bool canDeleteStayType(int reservationCount) => reservationCount == 0;
 
   // ── Deactivation ───────────────────────────────────────────────────────
 
@@ -215,35 +213,44 @@ class ConfigRules {
     final issues = <ChecklistIssue>[];
 
     if (!stayTypes.any((s) => s.isActive)) {
-      issues.add(const ChecklistIssue(
-        message: 'No active stay types — new reservations cannot be created.',
-        section: ConfigSection.stayTypes,
-      ));
+      issues.add(
+        const ChecklistIssue(
+          message: 'No active stay types — new reservations cannot be created.',
+          section: ConfigSection.stayTypes,
+        ),
+      );
     }
 
     if (!units.any((u) => u.isActive)) {
-      issues.add(const ChecklistIssue(
-        message: 'No active units — new reservations cannot be created.',
-        section: ConfigSection.units,
-      ));
+      issues.add(
+        const ChecklistIssue(
+          message: 'No active units — new reservations cannot be created.',
+          section: ConfigSection.units,
+        ),
+      );
     }
 
     for (final unit in units.where((u) => u.unitTypeId.isEmpty)) {
-      issues.add(ChecklistIssue(
-        message: '${unit.name} has no unit type.',
-        section: ConfigSection.units,
-      ));
+      issues.add(
+        ChecklistIssue(
+          message: '${unit.name} has no unit type.',
+          section: ConfigSection.units,
+        ),
+      );
     }
 
     final typesById = {for (final t in unitTypes) t.id: t};
     for (final unit in units.where((u) => u.isActive)) {
       final type = typesById[unit.unitTypeId];
       if (type != null && !type.isActive) {
-        issues.add(ChecklistIssue(
-          message: '${unit.name} is active but uses the inactive unit type '
-              '${type.name}.',
-          section: ConfigSection.units,
-        ));
+        issues.add(
+          ChecklistIssue(
+            message:
+                '${unit.name} is active but uses the inactive unit type '
+                '${type.name}.',
+            section: ConfigSection.units,
+          ),
+        );
       }
     }
 
@@ -252,10 +259,9 @@ class ConfigRules {
       stayTypes: stayTypes,
       rates: rates,
     )) {
-      issues.add(ChecklistIssue(
-        message: missing.label,
-        section: ConfigSection.rates,
-      ));
+      issues.add(
+        ChecklistIssue(message: missing.label, section: ConfigSection.rates),
+      );
     }
 
     return issues;

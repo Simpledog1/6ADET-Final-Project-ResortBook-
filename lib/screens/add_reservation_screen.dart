@@ -12,8 +12,12 @@ import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../utils/currency_format.dart';
 import '../utils/date_format.dart';
+import '../widgets/app_card.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_inputs.dart';
+import '../widgets/confirm_dialog.dart';
+import '../widgets/desktop_page.dart';
+import '../widgets/responsive.dart';
 
 class AddReservationScreen extends StatefulWidget {
   const AddReservationScreen({super.key});
@@ -82,9 +86,8 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
         _units = results[1] as List<Unit>;
         _rates = results[2] as List<Rate>;
         // Re-select by id so the selections match the freshly loaded objects.
-        _stayType = _stayTypes
-                .where((s) => s.id == _stayType?.id)
-                .firstOrNull ??
+        _stayType =
+            _stayTypes.where((s) => s.id == _stayType?.id).firstOrNull ??
             _stayTypes.firstOrNull;
         _unit = _units.where((u) => u.id == _unit?.id).firstOrNull;
         _resetCount++;
@@ -109,8 +112,8 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
   int get _nights => _needsCheckOutDate
       ? (_checkInDate != null && _checkOutDate != null
-          ? BookingLogic.nightsBetween(_checkInDate!, _checkOutDate!)
-          : 0)
+            ? BookingLogic.nightsBetween(_checkInDate!, _checkOutDate!)
+            : 0)
       : 1;
 
   StayWindow? get _window {
@@ -140,7 +143,8 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   }
 
   /// Unit + stay type are chosen but no rate is configured for them.
-  bool get _isRateMissing => _unit != null && _stayType != null && _rate == null;
+  bool get _isRateMissing =>
+      _unit != null && _stayType != null && _rate == null;
 
   String get _missingRateMessage {
     if (_unit != null && _unit!.unitTypeId.isEmpty) {
@@ -228,7 +232,9 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
     if (!formValid || problem != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(problem ?? 'Please fix the highlighted fields.')),
+        SnackBar(
+          content: Text(problem ?? 'Please fix the highlighted fields.'),
+        ),
       );
       return;
     }
@@ -331,278 +337,523 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   }
 
   // ── UI ─────────────────────────────────────────────────────────────────
+  //
+  // The phone and desktop layouts arrange the same field widgets below;
+  // all state, validation and saving stay in this class.
+
+  bool get _canSave =>
+      !_isSubmitting &&
+      _conflictError == null &&
+      !_isRateMissing &&
+      _loadError == null;
+
+  /// Cancel: back to the previous page, or — when Add Reservation was opened
+  /// straight from the desktop sidebar — to the Dashboard.
+  void _cancel() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      DesktopShellScope.navigate(context, ShellSection.dashboard);
+    }
+  }
+
+  Widget _nameField() {
+    return FieldLabel(
+      text: 'Guest Name',
+      child: TextFormField(
+        controller: _nameController,
+        style: AppText.body,
+        textCapitalization: TextCapitalization.words,
+        decoration: AppInputs.decoration(
+          hint: 'Enter guest name',
+          icon: Icons.person,
+        ),
+        validator: (v) =>
+            v == null || v.trim().isEmpty ? 'Guest name is required.' : null,
+      ),
+    );
+  }
+
+  Widget _phoneField() {
+    return FieldLabel(
+      text: 'Contact Number',
+      child: TextFormField(
+        controller: _phoneController,
+        style: AppText.body,
+        keyboardType: TextInputType.phone,
+        decoration: AppInputs.decoration(
+          hint: '+63 9XX XXX XXXX',
+          icon: Icons.phone,
+        ),
+      ),
+    );
+  }
+
+  Widget _emailField() {
+    return FieldLabel(
+      text: 'Email',
+      child: TextFormField(
+        controller: _emailController,
+        style: AppText.body,
+        keyboardType: TextInputType.emailAddress,
+        decoration: AppInputs.decoration(
+          hint: 'guest@email.com',
+          icon: Icons.email,
+        ),
+      ),
+    );
+  }
+
+  /// Adds [delta] to the typed guest count (minimum 1). Typing still works;
+  /// the same validator checks the result against the unit's capacity.
+  void _stepGuestCount(int delta) {
+    final current = int.tryParse(_guestCountController.text) ?? 0;
+    var next = current + delta;
+    if (next < 1) next = 1;
+    _guestCountController.text = '$next';
+    setState(() {}); // refresh the stepper buttons
+  }
+
+  /// Number of Guests. [stepper] adds − / + buttons (desktop).
+  Widget _guestCountField({bool stepper = false}) {
+    final current = int.tryParse(_guestCountController.text) ?? 0;
+    final capacity = _unit?.capacity ?? 0;
+    var decoration = AppInputs.decoration(
+      hint: _unit != null && _unit!.capacity > 0
+          ? 'Up to ${_unit!.capacity}'
+          : 'e.g. 2',
+      icon: stepper ? null : Icons.groups,
+    );
+    if (stepper) {
+      decoration = decoration.copyWith(
+        prefixIcon: IconButton(
+          tooltip: 'Fewer guests',
+          icon: const Icon(Icons.remove, size: 18),
+          color: AppColors.textSecondary,
+          onPressed: current > 1 ? () => _stepGuestCount(-1) : null,
+        ),
+        suffixIcon: IconButton(
+          tooltip: 'More guests',
+          icon: const Icon(Icons.add, size: 18),
+          color: AppColors.primary,
+          onPressed: capacity > 0 && current >= capacity
+              ? null
+              : () => _stepGuestCount(1),
+        ),
+      );
+    }
+
+    return FieldLabel(
+      text: 'Number of Guests',
+      child: TextFormField(
+        controller: _guestCountController,
+        style: AppText.body,
+        textAlign: stepper ? TextAlign.center : TextAlign.start,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        decoration: decoration,
+        // Rebuild so the stepper buttons enable / disable while typing.
+        onChanged: stepper ? (_) => setState(() {}) : null,
+        validator: (v) =>
+            BookingLogic.validateGuestCount(int.tryParse(v ?? ''), _unit),
+      ),
+    );
+  }
+
+  Widget _stayTypeField() {
+    return FieldLabel(
+      text: 'Stay Type',
+      child: _stayTypes.isEmpty
+          ? const _EmptyHint(
+              icon: Icons.schedule,
+              text: 'No active stay types found.',
+            )
+          : _StayTypeSelector(
+              stayTypes: _stayTypes,
+              selected: _stayType,
+              onSelected: _selectStayType,
+            ),
+    );
+  }
+
+  Widget _unitField() {
+    return FieldLabel(
+      text: 'Unit',
+      child: _units.isEmpty
+          ? const _EmptyHint(
+              icon: Icons.meeting_room,
+              text: 'No active units found.',
+            )
+          : DropdownButtonFormField<Unit>(
+              key: ValueKey('unit-$_resetCount'),
+              decoration: AppInputs.decoration(
+                hint: 'Select a unit',
+                icon: Icons.meeting_room,
+              ),
+              style: AppText.body,
+              isExpanded: true,
+              icon: const Icon(
+                Icons.keyboard_arrow_down,
+                color: AppColors.textSecondary,
+              ),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              dropdownColor: AppColors.surface,
+              initialValue: _unit,
+              items: _units.map((unit) {
+                final capacity = unit.capacity > 0
+                    ? ' · up to ${unit.capacity}'
+                    : '';
+                return DropdownMenuItem(
+                  value: unit,
+                  child: Text(
+                    '${unit.displayLabel}$capacity',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+              onChanged: (val) => setState(() {
+                _unit = val;
+                _conflictError = null; // re-check on save
+              }),
+              validator: (v) => v == null ? 'Select a unit.' : null,
+            ),
+    );
+  }
+
+  Widget _checkInField() {
+    return FieldLabel(
+      text: 'Check-in Date',
+      child: PickerField(
+        value: _checkInDate == null ? null : DateFormatUtil.long(_checkInDate!),
+        placeholder: 'Select check-in date',
+        highlightError:
+            _conflictError != null || (_submitted && _checkInDate == null),
+        onTap: () => _selectDate(context, true),
+      ),
+    );
+  }
+
+  Widget _checkOutField() {
+    return FieldLabel(
+      text: 'Check-out Date',
+      child: PickerField(
+        value: _checkOutDate == null
+            ? null
+            : DateFormatUtil.long(_checkOutDate!),
+        placeholder: 'Select check-out date',
+        highlightError:
+            _conflictError != null || (_submitted && _checkOutDate == null),
+        onTap: () => _selectDate(context, false),
+      ),
+    );
+  }
+
+  Widget _notesField() {
+    return TextFormField(
+      controller: _notesController,
+      style: AppText.body,
+      minLines: 3,
+      maxLines: 5,
+      maxLength: 2000,
+      textCapitalization: TextCapitalization.sentences,
+      decoration: AppInputs.decoration(
+        hint: 'Special requests, arrival details… (optional)',
+      ),
+    );
+  }
+
+  Widget _saveButton({ButtonStyle? style}) {
+    return FilledButton.icon(
+      style: style,
+      onPressed: _canSave ? _submitReservation : null,
+      icon: _isSubmitting
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : const Icon(Icons.save, size: 18),
+      label: const Text('Save Reservation'),
+    );
+  }
+
+  Widget? _loadErrorBanner({bool accent = false}) {
+    if (_loadError == null) return null;
+    return _NoticeBanner(
+      title: 'Connection problem',
+      message: _loadError!,
+      actionLabel: 'Retry',
+      onAction: _loadConfiguration,
+      accent: accent,
+    );
+  }
+
+  Widget? _conflictBanner({bool accent = false}) {
+    if (_conflictError == null) return null;
+    return _NoticeBanner(
+      title: 'Date Conflict Detected',
+      message: _conflictError!,
+      accent: accent,
+    );
+  }
+
+  Widget? _rateBanner({bool accent = false}) {
+    if (!_isRateMissing) return null;
+    return _NoticeBanner(
+      title: 'No Rate Set',
+      message: _missingRateMessage,
+      accent: accent,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final hasConflict = _conflictError != null;
+    if (DesktopShellScope.isInside(context)) return _buildDesktop(context);
+    return _buildMobile(context);
+  }
+
+  // ── Phone / tablet (unchanged layout, centred on tablets) ─────────────
+
+  Widget _buildMobile(BuildContext context) {
     final window = _window;
     final quote = _quote;
+    final loadError = _loadErrorBanner();
+    final conflict = _conflictBanner();
+    final rateBanner = _rateBanner();
 
     return Scaffold(
       appBar: const AppHeader(title: 'Add Reservation'),
       body: _isLoadingConfig
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                20,
-                AppSpacing.md,
-                AppSpacing.lg * 2,
-              ),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: _submitted
-                    ? AutovalidateMode.onUserInteraction
-                    : AutovalidateMode.disabled,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_loadError != null) ...[
-                      _NoticeBanner(
-                        title: 'Connection problem',
-                        message: _loadError!,
-                        actionLabel: 'Retry',
-                        onAction: _loadConfiguration,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+          : ResponsiveContent(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  20,
+                  AppSpacing.md,
+                  AppSpacing.lg * 2,
+                ),
+                child: Form(
+                  key: _formKey,
+                  autovalidateMode: _submitted
+                      ? AutovalidateMode.onUserInteraction
+                      : AutovalidateMode.disabled,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (loadError != null) ...[
+                        loadError,
+                        const SizedBox(height: 16),
+                      ],
 
-                    // ── Guest information ───────────────────────────────
-                    const FormSectionHeader('Guest Information'),
-                    const SizedBox(height: 12),
-                    FieldLabel(
-                      text: 'Guest Name',
-                      child: TextFormField(
-                        controller: _nameController,
-                        style: AppText.body,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: AppInputs.decoration(
-                          hint: 'Enter guest name',
-                          icon: Icons.person,
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? 'Guest name is required.'
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FieldLabel(
-                      text: 'Contact Number',
-                      child: TextFormField(
-                        controller: _phoneController,
-                        style: AppText.body,
-                        keyboardType: TextInputType.phone,
-                        decoration: AppInputs.decoration(
-                          hint: '+63 9XX XXX XXXX',
-                          icon: Icons.phone,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FieldLabel(
-                      text: 'Email',
-                      child: TextFormField(
-                        controller: _emailController,
-                        style: AppText.body,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: AppInputs.decoration(
-                          hint: 'guest@email.com',
-                          icon: Icons.email,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FieldLabel(
-                      text: 'Number of Guests',
-                      child: TextFormField(
-                        controller: _guestCountController,
-                        style: AppText.body,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: AppInputs.decoration(
-                          hint: _unit != null && _unit!.capacity > 0
-                              ? 'Up to ${_unit!.capacity}'
-                              : 'e.g. 2',
-                          icon: Icons.groups,
-                        ),
-                        validator: (v) => BookingLogic.validateGuestCount(
-                          int.tryParse(v ?? ''),
-                          _unit,
-                        ),
-                      ),
-                    ),
-
-                    // ── Stay details ────────────────────────────────────
-                    const FormSectionHeader('Stay Details', topPadding: 20),
-                    const SizedBox(height: 12),
-                    FieldLabel(
-                      text: 'Stay Type',
-                      child: _stayTypes.isEmpty
-                          ? const _EmptyHint(
-                              icon: Icons.schedule,
-                              text: 'No active stay types found.',
-                            )
-                          : _StayTypeSelector(
-                              stayTypes: _stayTypes,
-                              selected: _stayType,
-                              onSelected: _selectStayType,
-                            ),
-                    ),
-                    const SizedBox(height: 12),
-                    FieldLabel(
-                      text: 'Unit',
-                      child: _units.isEmpty
-                          ? const _EmptyHint(
-                              icon: Icons.meeting_room,
-                              text: 'No active units found.',
-                            )
-                          : DropdownButtonFormField<Unit>(
-                              key: ValueKey('unit-$_resetCount'),
-                              decoration: AppInputs.decoration(
-                                hint: 'Select a unit',
-                                icon: Icons.meeting_room,
-                              ),
-                              style: AppText.body,
-                              isExpanded: true,
-                              icon: const Icon(
-                                Icons.keyboard_arrow_down,
-                                color: AppColors.textSecondary,
-                              ),
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusSm),
-                              dropdownColor: AppColors.surface,
-                              initialValue: _unit,
-                              items: _units.map((unit) {
-                                final capacity = unit.capacity > 0
-                                    ? ' · up to ${unit.capacity}'
-                                    : '';
-                                return DropdownMenuItem(
-                                  value: unit,
-                                  child: Text(
-                                    '${unit.displayLabel}$capacity',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (val) => setState(() {
-                                _unit = val;
-                                _conflictError = null; // re-check on save
-                              }),
-                              validator: (v) =>
-                                  v == null ? 'Select a unit.' : null,
-                            ),
-                    ),
-
-                    // ── Reservation dates ───────────────────────────────
-                    const FormSectionHeader(
-                      'Reservation Dates',
-                      topPadding: 20,
-                    ),
-                    const SizedBox(height: 12),
-                    FieldLabel(
-                      text: 'Check-in Date',
-                      child: PickerField(
-                        value: _checkInDate == null
-                            ? null
-                            : DateFormatUtil.long(_checkInDate!),
-                        placeholder: 'Select check-in date',
-                        highlightError: hasConflict ||
-                            (_submitted && _checkInDate == null),
-                        onTap: () => _selectDate(context, true),
-                      ),
-                    ),
-                    if (_needsCheckOutDate) ...[
+                      // ── Guest information ─────────────────────────────
+                      const FormSectionHeader('Guest Information'),
                       const SizedBox(height: 12),
-                      FieldLabel(
-                        text: 'Check-out Date',
-                        child: PickerField(
-                          value: _checkOutDate == null
-                              ? null
-                              : DateFormatUtil.long(_checkOutDate!),
-                          placeholder: 'Select check-out date',
-                          highlightError: hasConflict ||
-                              (_submitted && _checkOutDate == null),
-                          onTap: () => _selectDate(context, false),
-                        ),
+                      _nameField(),
+                      const SizedBox(height: 12),
+                      _phoneField(),
+                      const SizedBox(height: 12),
+                      _emailField(),
+                      const SizedBox(height: 12),
+                      _guestCountField(),
+
+                      // ── Stay details ──────────────────────────────────
+                      const FormSectionHeader('Stay Details', topPadding: 20),
+                      const SizedBox(height: 12),
+                      _stayTypeField(),
+                      const SizedBox(height: 12),
+                      _unitField(),
+
+                      // ── Reservation dates ─────────────────────────────
+                      const FormSectionHeader(
+                        'Reservation Dates',
+                        topPadding: 20,
+                      ),
+                      const SizedBox(height: 12),
+                      _checkInField(),
+                      if (_needsCheckOutDate) ...[
+                        const SizedBox(height: 12),
+                        _checkOutField(),
+                      ],
+                      if (window != null) ...[
+                        const SizedBox(height: 12),
+                        _ScheduleSummary(window: window, stayType: _stayType!),
+                      ],
+
+                      // Conflict Alert Banner
+                      if (conflict != null) ...[
+                        const SizedBox(height: 12),
+                        conflict,
+                      ],
+
+                      // ── Price ─────────────────────────────────────────
+                      if (rateBanner != null) ...[
+                        const SizedBox(height: 12),
+                        rateBanner,
+                      ] else if (quote != null) ...[
+                        const SizedBox(height: 12),
+                        _PriceSummary(quote: quote),
+                      ],
+
+                      // ── Notes ─────────────────────────────────────────
+                      const FormSectionHeader('Notes', topPadding: 20),
+                      const SizedBox(height: 12),
+                      _notesField(),
+
+                      // ── Actions ───────────────────────────────────────
+                      const SizedBox(height: 12),
+                      _saveButton(),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.close, size: 18),
+                        label: const Text('Cancel'),
                       ),
                     ],
-                    if (window != null) ...[
-                      const SizedBox(height: 12),
-                      _ScheduleSummary(
-                        window: window,
-                        stayType: _stayType!,
-                      ),
-                    ],
-
-                    // Conflict Alert Banner
-                    if (hasConflict) ...[
-                      const SizedBox(height: 12),
-                      _NoticeBanner(
-                        title: 'Date Conflict Detected',
-                        message: _conflictError!,
-                      ),
-                    ],
-
-                    // ── Price ───────────────────────────────────────────
-                    if (_isRateMissing) ...[
-                      const SizedBox(height: 12),
-                      _NoticeBanner(
-                        title: 'No Rate Set',
-                        message: _missingRateMessage,
-                      ),
-                    ] else if (quote != null) ...[
-                      const SizedBox(height: 12),
-                      _PriceSummary(quote: quote),
-                    ],
-
-                    // ── Notes ───────────────────────────────────────────
-                    const FormSectionHeader('Notes', topPadding: 20),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _notesController,
-                      style: AppText.body,
-                      minLines: 3,
-                      maxLines: 5,
-                      maxLength: 2000,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: AppInputs.decoration(
-                        hint: 'Special requests, arrival details… (optional)',
-                      ),
-                    ),
-
-                    // ── Actions ─────────────────────────────────────────
-                    const SizedBox(height: 12),
-                    FilledButton.icon(
-                      onPressed: (_isSubmitting ||
-                              hasConflict ||
-                              _isRateMissing ||
-                              _loadError != null)
-                          ? null
-                          : _submitReservation,
-                      icon: _isSubmitting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.save, size: 18),
-                      label: const Text('Save Reservation'),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Cancel'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
+    );
+  }
+
+  // ── Desktop: one centred card (~880px) ─────────────────────────────────
+
+  static const double _desktopWidth = 880;
+
+  /// Two fields side by side (top-aligned so error text doesn't shift).
+  Widget _pair(Widget left, Widget right) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  Widget _buildDesktop(BuildContext context) {
+    return DesktopPage(
+      title: 'Add Reservation',
+      subtitle: 'Book a unit for a guest. Times come from the stay type.',
+      maxWidth: _desktopWidth,
+      breadcrumbs: [
+        BreadcrumbItem(
+          'Reservations',
+          onTap: () =>
+              DesktopShellScope.navigate(context, ShellSection.reservations),
+        ),
+        const BreadcrumbItem('Add Reservation'),
+      ],
+      children: [
+        if (_isLoadingConfig)
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.lg * 2),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else
+          AppCard(
+            padding: const EdgeInsets.all(32),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: _submitted
+                  ? AutovalidateMode.onUserInteraction
+                  : AutovalidateMode.disabled,
+              child: _buildDesktopForm(context),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopForm(BuildContext context) {
+    final window = _window;
+    final quote = _quote;
+    final loadError = _loadErrorBanner(accent: true);
+    final conflict = _conflictBanner(accent: true);
+    final rateBanner = _rateBanner(accent: true);
+
+    final Widget checkOut = _needsCheckOutDate
+        ? _checkOutField()
+        : FieldLabel(
+            text: 'Check-out',
+            child: _EmptyHint(
+              icon: Icons.logout,
+              text: window != null
+                  ? DateFormatUtil.shortWithTime(window.end)
+                  : 'Set by the stay type',
+            ),
+          );
+
+    // Price column: rate warning, quote, or nothing yet.
+    final Widget? price =
+        rateBanner ?? (quote != null ? _PriceSummary(quote: quote) : null);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (loadError != null) ...[
+          loadError,
+          const SizedBox(height: AppSpacing.lg),
+        ],
+
+        // ── Guest information ──
+        const FormSectionHeader('Guest Information'),
+        const SizedBox(height: AppSpacing.md),
+        _pair(_nameField(), _phoneField()),
+        const SizedBox(height: AppSpacing.md),
+        _pair(_emailField(), _guestCountField(stepper: true)),
+
+        // ── Stay details ──
+        const FormSectionHeader('Stay Details', topPadding: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
+        _pair(_stayTypeField(), _unitField()),
+
+        // ── Reservation dates ──
+        const FormSectionHeader('Reservation Dates', topPadding: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
+        _pair(_checkInField(), checkOut),
+
+        // ── Summary: schedule and price side by side ──
+        if (window != null || price != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          _pair(
+            window != null
+                ? _ScheduleSummary(window: window, stayType: _stayType!)
+                : const SizedBox.shrink(),
+            price ?? const SizedBox.shrink(),
+          ),
+        ],
+        if (conflict != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          conflict,
+        ],
+
+        // ── Notes ──
+        const FormSectionHeader('Notes', topPadding: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
+        _notesField(),
+
+        // ── Actions ──
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            OutlinedButton(
+              style: CompactButtons.outlined(),
+              onPressed: _isSubmitting ? null : _cancel,
+              child: const Text('Cancel'),
+            ),
+            const SizedBox(width: 12),
+            _saveButton(style: CompactButtons.filled()),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -626,8 +877,7 @@ class _StayTypeSelector extends StatelessWidget {
       builder: (context, constraints) {
         // Up to 3 per row, equal width.
         final perRow = stayTypes.length < 3 ? stayTypes.length : 3;
-        final width =
-            (constraints.maxWidth - gap * (perRow - 1)) / perRow;
+        final width = (constraints.maxWidth - gap * (perRow - 1)) / perRow;
         return Wrap(
           spacing: gap,
           runSpacing: gap,
@@ -718,7 +968,8 @@ class _ScheduleSummary extends StatelessWidget {
     if (window.nights == 0) {
       length = '${stayType.name} · same day';
     } else {
-      length = '${stayType.name} · ${window.nights} '
+      length =
+          '${stayType.name} · ${window.nights} '
           'night${window.nights == 1 ? '' : 's'}';
     }
 
@@ -747,10 +998,7 @@ class _ScheduleSummary extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: AppColors.primary),
         const SizedBox(width: 8),
-        SizedBox(
-          width: 72,
-          child: Text(label, style: AppText.bodySecondary),
-        ),
+        SizedBox(width: 72, child: Text(label, style: AppText.bodySecondary)),
         Expanded(
           child: Text(
             DateFormatUtil.shortWithTime(value),
@@ -773,7 +1021,7 @@ class _PriceSummary extends StatelessWidget {
     final perNight = quote.basis == PricingBasis.perNight;
     final unitLabel = perNight
         ? '${CurrencyFormat.peso(quote.rate)} / night × ${quote.quantity} '
-            'night${quote.quantity == 1 ? '' : 's'}'
+              'night${quote.quantity == 1 ? '' : 's'}'
         : '${CurrencyFormat.peso(quote.rate)} per stay';
 
     return Container(
@@ -842,28 +1090,41 @@ class _EmptyHint extends StatelessWidget {
 }
 
 /// Orange notice banner from the Figma design ("Date Conflict Detected").
+///
+/// [accent] (desktop) uses the Figma orange left border instead of the
+/// full outline.
 class _NoticeBanner extends StatelessWidget {
   final String title;
   final String message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final bool accent;
 
   const _NoticeBanner({
     required this.title,
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.accent = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final radius = BorderRadius.circular(AppSpacing.radiusSm);
+    final content = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.warningTint,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        border: Border.all(color: AppColors.warningBorder),
-      ),
+      decoration: accent
+          ? const BoxDecoration(
+              color: AppColors.warningTint,
+              border: Border(
+                left: BorderSide(color: AppColors.warning, width: 4),
+              ),
+            )
+          : BoxDecoration(
+              color: AppColors.warningTint,
+              borderRadius: radius,
+              border: Border.all(color: AppColors.warningBorder),
+            ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -917,5 +1178,7 @@ class _NoticeBanner extends StatelessWidget {
         ],
       ),
     );
+    if (!accent) return content;
+    return ClipRRect(borderRadius: radius, child: content);
   }
 }

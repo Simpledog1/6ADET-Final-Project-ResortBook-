@@ -67,10 +67,7 @@ class StatusBadge extends StatelessWidget {
     final style = StatusStyle.of(status);
     final label = status.isEmpty ? 'Reserved' : status;
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: 4,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 4),
       decoration: BoxDecoration(
         color: tinted ? style.tint : style.color,
         borderRadius: BorderRadius.circular(999),

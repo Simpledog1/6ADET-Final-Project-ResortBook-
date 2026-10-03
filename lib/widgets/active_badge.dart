@@ -11,8 +11,9 @@ class ActiveBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isActive ? AppColors.checkedIn : AppColors.completed;
-    final background =
-        isActive ? AppColors.checkedInTint : AppColors.completedTint;
+    final background = isActive
+        ? AppColors.checkedInTint
+        : AppColors.completedTint;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

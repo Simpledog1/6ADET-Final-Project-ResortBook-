@@ -21,12 +21,12 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
 
   const AppHeader({super.key, required this.title, this.onBack})
-      : isHome = false;
+    : isHome = false;
 
   const AppHeader.home({super.key})
-      : title = 'ResortBook',
-        isHome = true,
-        onBack = null;
+    : title = 'ResortBook',
+      isHome = true,
+      onBack = null;
 
   @override
   Size get preferredSize => const Size.fromHeight(AppSpacing.headerHeight);

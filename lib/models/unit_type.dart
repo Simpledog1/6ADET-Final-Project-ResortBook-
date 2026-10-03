@@ -32,10 +32,10 @@ class UnitType {
 
   /// Body for create/update requests.
   Map<String, dynamic> toBody() => {
-        'name': name,
-        'description': description,
-        'defaultCapacity': defaultCapacity,
-        'isActive': isActive,
-        'sortOrder': sortOrder,
-      };
+    'name': name,
+    'description': description,
+    'defaultCapacity': defaultCapacity,
+    'isActive': isActive,
+    'sortOrder': sortOrder,
+  };
 }

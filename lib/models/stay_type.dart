@@ -8,8 +8,10 @@ enum PricingBasis {
   final String value;
   const PricingBasis(this.value);
 
-  static PricingBasis fromValue(String value) => PricingBasis.values
-      .firstWhere((b) => b.value == value, orElse: () => PricingBasis.perStay);
+  static PricingBasis fromValue(String value) => PricingBasis.values.firstWhere(
+    (b) => b.value == value,
+    orElse: () => PricingBasis.perStay,
+  );
 }
 
 /// A configurable stay type (Overnight, Day Tour, Night Tour, ...).
@@ -80,14 +82,14 @@ class StayType {
 
   /// Body for create/update requests.
   Map<String, dynamic> toBody() => {
-        'name': name,
-        'description': description,
-        'checkInTime': checkInTime,
-        'checkOutTime': checkOutTime,
-        'endsNextDay': endsNextDay,
-        'allowMultipleNights': allowMultipleNights,
-        'pricingBasis': pricingBasis.value,
-        'isActive': isActive,
-        'sortOrder': sortOrder,
-      };
+    'name': name,
+    'description': description,
+    'checkInTime': checkInTime,
+    'checkOutTime': checkOutTime,
+    'endsNextDay': endsNextDay,
+    'allowMultipleNights': allowMultipleNights,
+    'pricingBasis': pricingBasis.value,
+    'isActive': isActive,
+    'sortOrder': sortOrder,
+  };
 }

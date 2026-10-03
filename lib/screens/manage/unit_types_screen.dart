@@ -94,10 +94,10 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
       title: 'Deactivate ${type.name}?',
       message: count == 0
           ? 'No active units use this type. It will no longer be offered '
-              'for new units. Existing reservations are not affected.'
+                'for new units. Existing reservations are not affected.'
           : '$count active unit${count == 1 ? '' : 's'} use this type. '
-              'Existing reservations are not affected, and units are never '
-              'deleted.',
+                'Existing reservations are not affected, and units are never '
+                'deleted.',
       confirmLabel: 'Deactivate',
       details: count == 0
           ? null
@@ -138,7 +138,7 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
         unitsToDeactivate.isEmpty
             ? '${type.name} deactivated.'
             : '${type.name} and ${unitsToDeactivate.length} '
-                'unit${unitsToDeactivate.length == 1 ? '' : 's'} deactivated.',
+                  'unit${unitsToDeactivate.length == 1 ? '' : 's'} deactivated.',
       );
       _load();
     } catch (e) {
@@ -150,15 +150,16 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
     try {
       await ConfigService.setUnitTypeActive(type.id, true);
       if (!mounted) return;
-      final inactiveUnits =
-          _units.where((u) => u.unitTypeId == type.id && !u.isActive).length;
+      final inactiveUnits = _units
+          .where((u) => u.unitTypeId == type.id && !u.isActive)
+          .length;
       showManageMessage(
         context,
         inactiveUnits == 0
             ? '${type.name} activated.'
             : '${type.name} activated. Its $inactiveUnits inactive '
-                'unit${inactiveUnits == 1 ? ' stays' : 's stay'} inactive — '
-                'reactivate them from Units.',
+                  'unit${inactiveUnits == 1 ? ' stays' : 's stay'} inactive — '
+                  'reactivate them from Units.',
       );
       _load();
     } catch (e) {
@@ -170,7 +171,8 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Delete ${type.name}?',
-      message: 'No units use this type. Any rates set for it are removed too. '
+      message:
+          'No units use this type. Any rates set for it are removed too. '
           'Existing reservations keep their saved names and prices. '
           'This cannot be undone.',
       confirmLabel: 'Delete',
@@ -233,15 +235,12 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
     return ManagePage(
       title: 'Unit Types',
       onRefresh: _load,
-      children: [
-        const ManageIntro(
+      intro:
           'Group your units into types such as Room, Cottage or Villa. '
           'Rates are set per unit type.',
-        ),
-        ManageAddButton(label: 'Add Unit Type', onPressed: () => _openForm()),
-        const SizedBox(height: AppSpacing.md),
-        ..._buildContent(),
-      ],
+      addLabel: 'Add Unit Type',
+      onAdd: () => _openForm(),
+      children: [..._buildContent()],
     );
   }
 

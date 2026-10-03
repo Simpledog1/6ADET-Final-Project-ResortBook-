@@ -6,7 +6,11 @@ import 'package:final_project/models/stay_type.dart';
 import 'package:final_project/models/unit.dart';
 import 'package:final_project/models/unit_type.dart';
 
-const cottage = UnitType(id: 'ut_cottage', name: 'Cottage', defaultCapacity: 10);
+const cottage = UnitType(
+  id: 'ut_cottage',
+  name: 'Cottage',
+  defaultCapacity: 10,
+);
 const villa = UnitType(id: 'ut_villa', name: 'Villa', defaultCapacity: 6);
 const oldType = UnitType(id: 'ut_old', name: 'Old Hut', isActive: false);
 
@@ -36,7 +40,10 @@ const nightTour = StayType(
 void main() {
   group('names', () {
     test('normalizes whitespace', () {
-      expect(ConfigRules.normalizeName('  Family   Cottage '), 'Family Cottage');
+      expect(
+        ConfigRules.normalizeName('  Family   Cottage '),
+        'Family Cottage',
+      );
     });
 
     test('duplicate unit type names are rejected (case-insensitive)', () {
@@ -254,9 +261,24 @@ void main() {
 
   group('rates and checklist', () {
     const rates = [
-      Rate(id: 'r1', unitTypeId: 'ut_cottage', stayTypeId: 'st_overnight', price: 2500),
-      Rate(id: 'r2', unitTypeId: 'ut_cottage', stayTypeId: 'st_day', price: 800),
-      Rate(id: 'r3', unitTypeId: 'ut_villa', stayTypeId: 'st_overnight', price: 4000),
+      Rate(
+        id: 'r1',
+        unitTypeId: 'ut_cottage',
+        stayTypeId: 'st_overnight',
+        price: 2500,
+      ),
+      Rate(
+        id: 'r2',
+        unitTypeId: 'ut_cottage',
+        stayTypeId: 'st_day',
+        price: 800,
+      ),
+      Rate(
+        id: 'r3',
+        unitTypeId: 'ut_villa',
+        stayTypeId: 'st_overnight',
+        price: 4000,
+      ),
     ];
 
     test('lists each missing active combination', () {
@@ -265,14 +287,11 @@ void main() {
         stayTypes: const [overnight, dayTour, nightTour],
         rates: rates,
       );
-      expect(
-        missing.map((m) => m.label),
-        [
-          'Cottage — Night Tour has no rate',
-          'Villa — Day Tour has no rate',
-          'Villa — Night Tour has no rate',
-        ],
-      ); // inactive "Old Hut" is ignored
+      expect(missing.map((m) => m.label), [
+        'Cottage — Night Tour has no rate',
+        'Villa — Day Tour has no rate',
+        'Villa — Night Tour has no rate',
+      ]); // inactive "Old Hut" is ignored
     });
 
     test('checklist flags setup problems', () {
@@ -289,7 +308,10 @@ void main() {
       final messages = issues.map((i) => i.message).toList();
       expect(messages, contains(startsWith('No active stay types')));
       expect(messages, contains('Mystery Unit has no unit type.'));
-      expect(messages, contains(contains('Hut 1 is active but uses the inactive')));
+      expect(
+        messages,
+        contains(contains('Hut 1 is active but uses the inactive')),
+      );
     });
 
     test('a complete setup has no issues', () {

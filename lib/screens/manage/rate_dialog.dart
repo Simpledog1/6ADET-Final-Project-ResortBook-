@@ -77,8 +77,9 @@ class _RateFormState extends State<RateForm> {
       _price.text = '';
     } else {
       final p = existing.price;
-      _price.text =
-          p == p.roundToDouble() ? p.toStringAsFixed(0) : p.toStringAsFixed(2);
+      _price.text = p == p.roundToDouble()
+          ? p.toStringAsFixed(0)
+          : p.toStringAsFixed(2);
     }
   }
 
@@ -111,7 +112,8 @@ class _RateFormState extends State<RateForm> {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Remove this rate?',
-      message: 'New reservations for this combination will be blocked until '
+      message:
+          'New reservations for this combination will be blocked until '
           'a rate is set again. Existing reservations keep their saved price.',
       confirmLabel: 'Remove',
       destructive: true,
@@ -208,8 +210,9 @@ class _RateFormState extends State<RateForm> {
             child: TextFormField(
               controller: _price,
               style: AppText.body,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: AppInputs.decoration(
                 hint: 'e.g. 2500',
                 icon: Icons.payments_outlined,
@@ -222,7 +225,7 @@ class _RateFormState extends State<RateForm> {
             existing == null
                 ? 'No rate is set for this combination yet.'
                 : 'Current rate: ${CurrencyFormat.peso(existing.price)}'
-                    '${perNight ? ' per night' : ' per stay'}',
+                      '${perNight ? ' per night' : ' per stay'}',
             style: AppText.caption,
           ),
           const SizedBox(height: 12),

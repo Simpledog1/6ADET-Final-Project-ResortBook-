@@ -26,8 +26,8 @@ class Rate {
 
   /// Body for create/update requests.
   Map<String, dynamic> toBody() => {
-        'unitType': unitTypeId,
-        'stayType': stayTypeId,
-        'price': price,
-      };
+    'unitType': unitTypeId,
+    'stayType': stayTypeId,
+    'price': price,
+  };
 }

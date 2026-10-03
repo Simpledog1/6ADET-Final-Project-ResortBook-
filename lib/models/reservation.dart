@@ -46,6 +46,10 @@ class Reservation {
   final int quantity; // nights (per_night) or 1 (per_stay)
   final double totalAmount; // 0 when not set
 
+  /// When the record was created (PocketBase `created` field), local time.
+  /// Null when the collection has no such field or it is empty.
+  final DateTime? createdAt;
+
   Reservation({
     required this.id,
     required this.guestName,
@@ -67,6 +71,7 @@ class Reservation {
     this.rateBasis = '',
     this.quantity = 0,
     this.totalAmount = 0,
+    this.createdAt,
   });
 
   factory Reservation.fromRecord(RecordModel record) {
@@ -96,6 +101,7 @@ class Reservation {
       rateBasis: record.getStringValue('rateBasis'),
       quantity: record.getIntValue('quantity'),
       totalAmount: record.getDoubleValue('totalAmount'),
+      createdAt: _parseOptionalDate(record.getStringValue('created')),
     );
   }
 
@@ -104,6 +110,11 @@ class Reservation {
   static DateTime _parseDate(String value) {
     final parsed = DateTime.tryParse(value);
     return (parsed ?? DateTime.fromMillisecondsSinceEpoch(0)).toLocal();
+  }
+
+  static DateTime? _parseOptionalDate(String value) {
+    if (value.isEmpty) return null;
+    return DateTime.tryParse(value)?.toLocal();
   }
 
   // ── Display helpers (snapshot first, then live relation) ──────────────

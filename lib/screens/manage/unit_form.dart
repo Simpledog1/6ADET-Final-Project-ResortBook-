@@ -57,8 +57,7 @@ class _UnitFormState extends State<UnitForm> {
     _sortOrder = TextEditingController(
       text: u != null && u.sortOrder != 0 ? '${u.sortOrder}' : '',
     );
-    _unitTypeId =
-        (u != null && u.unitTypeId.isNotEmpty) ? u.unitTypeId : null;
+    _unitTypeId = (u != null && u.unitTypeId.isNotEmpty) ? u.unitTypeId : null;
     _isActive = u?.isActive ?? true;
     _capacity.addListener(_refresh);
   }
@@ -151,10 +150,12 @@ class _UnitFormState extends State<UnitForm> {
   @override
   Widget build(BuildContext context) {
     final capacity = int.tryParse(_capacity.text.trim()) ?? 0;
-    final capacityWarning = widget.maxUpcomingGuests > 0 &&
+    final capacityWarning =
+        widget.maxUpcomingGuests > 0 &&
         capacity > 0 &&
         capacity < widget.maxUpcomingGuests;
-    final typeChanged = widget.existing != null &&
+    final typeChanged =
+        widget.existing != null &&
         widget.existing!.unitTypeId.isNotEmpty &&
         _unitTypeId != widget.existing!.unitTypeId;
     final types = _selectableTypes;
@@ -187,8 +188,9 @@ class _UnitFormState extends State<UnitForm> {
                     'There are no active unit types. Add one in Unit Types first.',
                   )
                 : DropdownButtonFormField<String>(
-                    initialValue:
-                        types.any((t) => t.id == _unitTypeId) ? _unitTypeId : null,
+                    initialValue: types.any((t) => t.id == _unitTypeId)
+                        ? _unitTypeId
+                        : null,
                     isExpanded: true,
                     decoration: AppInputs.decoration(
                       hint: 'Select a unit type',
@@ -212,8 +214,9 @@ class _UnitFormState extends State<UnitForm> {
                         ),
                     ],
                     onChanged: _saving ? null : _onTypeChanged,
-                    validator: (v) =>
-                        v == null || v.isEmpty ? 'Unit type is required.' : null,
+                    validator: (v) => v == null || v.isEmpty
+                        ? 'Unit type is required.'
+                        : null,
                   ),
           ),
           if (typeChanged) ...[

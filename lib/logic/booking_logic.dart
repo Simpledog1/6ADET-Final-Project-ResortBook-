@@ -91,9 +91,16 @@ class BookingLogic {
 
   /// Whole calendar days between two dates (time of day ignored).
   static int nightsBetween(DateTime checkInDate, DateTime checkOutDate) {
-    final a = DateTime.utc(checkInDate.year, checkInDate.month, checkInDate.day);
-    final b =
-        DateTime.utc(checkOutDate.year, checkOutDate.month, checkOutDate.day);
+    final a = DateTime.utc(
+      checkInDate.year,
+      checkInDate.month,
+      checkInDate.day,
+    );
+    final b = DateTime.utc(
+      checkOutDate.year,
+      checkOutDate.month,
+      checkOutDate.day,
+    );
     return b.difference(a).inDays;
   }
 

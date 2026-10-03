@@ -82,10 +82,7 @@ class ConfirmDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(message, style: AppText.bodySecondary),
-            if (details != null) ...[
-              const SizedBox(height: 12),
-              details!,
-            ],
+            if (details != null) ...[const SizedBox(height: 12), details!],
           ],
         ),
       ),

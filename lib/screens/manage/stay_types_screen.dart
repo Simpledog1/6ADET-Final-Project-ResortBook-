@@ -77,7 +77,8 @@ class _StayTypesScreenState extends State<StayTypesScreen> {
       builder: (_) => StayTypeForm(
         existing: stayType,
         otherNames: otherNames,
-        isLastActive: stayType != null &&
+        isLastActive:
+            stayType != null &&
             ConfigRules.isLastActiveStayType(stayType, _stayTypes),
         reservationCount: stayType == null ? 0 : _reservations(stayType),
       ),
@@ -96,7 +97,8 @@ class _StayTypesScreenState extends State<StayTypesScreen> {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Deactivate ${st.name}?',
-      message: 'It will no longer be offered for new reservations. '
+      message:
+          'It will no longer be offered for new reservations. '
           'Existing reservations keep their saved stay type.',
       confirmLabel: 'Deactivate',
       details: isLast
@@ -133,7 +135,8 @@ class _StayTypesScreenState extends State<StayTypesScreen> {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Delete ${st.name}?',
-      message: 'No reservations use this stay type. Any rates set for it are '
+      message:
+          'No reservations use this stay type. Any rates set for it are '
           'removed too. This cannot be undone.',
       confirmLabel: 'Delete',
       destructive: true,
@@ -175,7 +178,8 @@ class _StayTypesScreenState extends State<StayTypesScreen> {
         onPressed: ConfigRules.canDeleteStayType(reservations)
             ? () => _delete(st)
             : null,
-        disabledReason: 'Used by $reservations reservation'
+        disabledReason:
+            'Used by $reservations reservation'
             '${reservations == 1 ? '' : 's'} — deactivate instead',
       ),
     ];
@@ -188,15 +192,12 @@ class _StayTypesScreenState extends State<StayTypesScreen> {
     return ManagePage(
       title: 'Stay Types',
       onRefresh: _load,
-      children: [
-        const ManageIntro(
+      intro:
           'How guests can stay: check-in and check-out times, whether the '
           'stay ends the next day, and how it is priced.',
-        ),
-        ManageAddButton(label: 'Add Stay Type', onPressed: () => _openForm()),
-        const SizedBox(height: AppSpacing.md),
-        ..._buildContent(),
-      ],
+      addLabel: 'Add Stay Type',
+      onAdd: () => _openForm(),
+      children: [..._buildContent()],
     );
   }
 
@@ -225,11 +226,13 @@ class _StayTypesScreenState extends State<StayTypesScreen> {
 
     final widgets = <Widget>[];
     if (!_stayTypes.any((s) => s.isActive)) {
-      widgets.add(const FormMessage(
-        'No stay type is active. New reservations cannot be created until '
-        'one is activated.',
-        isError: false,
-      ));
+      widgets.add(
+        const FormMessage(
+          'No stay type is active. New reservations cannot be created until '
+          'one is activated.',
+          isError: false,
+        ),
+      );
       widgets.add(const SizedBox(height: AppSpacing.md));
     }
 

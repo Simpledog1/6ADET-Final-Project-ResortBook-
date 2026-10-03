@@ -58,16 +58,15 @@ class Unit {
   String get typeName => unitType?.name ?? legacyType;
 
   /// "Cottage 3 · Family Cottage" (or just the name if there is no type).
-  String get displayLabel =>
-      typeName.isEmpty ? name : '$name · $typeName';
+  String get displayLabel => typeName.isEmpty ? name : '$name · $typeName';
 
   /// Body for create/update requests.
   Map<String, dynamic> toBody() => {
-        'name': name,
-        'unitType': unitTypeId.isEmpty ? null : unitTypeId,
-        'capacity': capacity,
-        'isActive': isActive,
-        'sortOrder': sortOrder,
-        'cleaningStatus': cleaningStatus,
-      };
+    'name': name,
+    'unitType': unitTypeId.isEmpty ? null : unitTypeId,
+    'capacity': capacity,
+    'isActive': isActive,
+    'sortOrder': sortOrder,
+    'cleaningStatus': cleaningStatus,
+  };
 }

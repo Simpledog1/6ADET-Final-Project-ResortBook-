@@ -66,8 +66,9 @@ class ConfigService {
   }
 
   static Future<UnitType> createUnitType(UnitType type) async {
-    final record =
-        await _pb.collection('unit_types').create(body: type.toBody());
+    final record = await _pb
+        .collection('unit_types')
+        .create(body: type.toBody());
     return UnitType.fromRecord(record);
   }
 
@@ -123,8 +124,9 @@ class ConfigService {
   }
 
   static Future<StayType> createStayType(StayType stayType) async {
-    final record =
-        await _pb.collection('stay_types').create(body: stayType.toBody());
+    final record = await _pb
+        .collection('stay_types')
+        .create(body: stayType.toBody());
     return StayType.fromRecord(record);
   }
 
@@ -156,10 +158,10 @@ class ConfigService {
         .collection('rates')
         .getList(
           perPage: 1,
-          filter: _pb.filter(
-            'unitType = {:ut} && stayType = {:st}',
-            {'ut': unitTypeId, 'st': stayTypeId},
-          ),
+          filter: _pb.filter('unitType = {:ut} && stayType = {:st}', {
+            'ut': unitTypeId,
+            'st': stayTypeId,
+          }),
         );
     return result.items.isEmpty ? null : Rate.fromRecord(result.items.first);
   }
@@ -200,18 +202,12 @@ class ConfigService {
   }
 
   static Future<int> countUnitsOfType(String unitTypeId) {
-    return _count(
-      'units',
-      _pb.filter('unitType = {:id}', {'id': unitTypeId}),
-    );
+    return _count('units', _pb.filter('unitType = {:id}', {'id': unitTypeId}));
   }
 
   /// Every reservation of the unit, including cancelled and past ones.
   static Future<int> countReservationsForUnit(String unitId) {
-    return _count(
-      'reservations',
-      _pb.filter('unit = {:id}', {'id': unitId}),
-    );
+    return _count('reservations', _pb.filter('unit = {:id}', {'id': unitId}));
   }
 
   /// Every reservation that used the stay type, any status.
@@ -243,9 +239,8 @@ class ConfigService {
 
       if (unitId.isNotEmpty) {
         totalByUnit[unitId] = (totalByUnit[unitId] ?? 0) + 1;
-        final isUpcoming = !status.contains('cancel') &&
-            endAt != null &&
-            endAt.isAfter(now);
+        final isUpcoming =
+            !status.contains('cancel') && endAt != null && endAt.isAfter(now);
         if (isUpcoming) {
           upcomingByUnit[unitId] = (upcomingByUnit[unitId] ?? 0) + 1;
           if (guests > (maxGuests[unitId] ?? 0)) maxGuests[unitId] = guests;
@@ -294,9 +289,7 @@ class ConfigService {
         'cannot be deleted. Deactivate it instead.',
       );
     }
-    await _deleteRatesWhere(
-      _pb.filter('unitType = {:id}', {'id': unitTypeId}),
-    );
+    await _deleteRatesWhere(_pb.filter('unitType = {:id}', {'id': unitTypeId}));
     await _pb.collection('unit_types').delete(unitTypeId);
   }
 
@@ -324,9 +317,7 @@ class ConfigService {
         'Deactivate it instead.',
       );
     }
-    await _deleteRatesWhere(
-      _pb.filter('stayType = {:id}', {'id': stayTypeId}),
-    );
+    await _deleteRatesWhere(_pb.filter('stayType = {:id}', {'id': stayTypeId}));
     await _pb.collection('stay_types').delete(stayTypeId);
   }
 

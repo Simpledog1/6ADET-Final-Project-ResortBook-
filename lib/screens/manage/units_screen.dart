@@ -90,8 +90,7 @@ class _UnitsScreenState extends State<UnitsScreen> {
   int _reservations(Unit u) => _usage?.unitTotal(u.id) ?? 0;
   int _upcoming(Unit u) => _usage?.unitUpcoming(u.id) ?? 0;
 
-  String _typeLabel(Unit u) =>
-      u.typeName.isEmpty ? 'No unit type' : u.typeName;
+  String _typeLabel(Unit u) => u.typeName.isEmpty ? 'No unit type' : u.typeName;
 
   // ── Actions ────────────────────────────────────────────────────────────
 
@@ -102,20 +101,24 @@ class _UnitsScreenState extends State<UnitsScreen> {
       builder: (_) => UnitForm(
         existing: unit,
         unitTypes: _types,
-        maxUpcomingGuests:
-            unit == null ? 0 : (_usage?.unitMaxUpcomingGuests(unit.id) ?? 0),
+        maxUpcomingGuests: unit == null
+            ? 0
+            : (_usage?.unitMaxUpcomingGuests(unit.id) ?? 0),
       ),
     );
     if (saved == true && mounted) {
-      showManageMessage(context, unit == null ? 'Unit added.' : 'Unit updated.');
+      showManageMessage(
+        context,
+        unit == null ? 'Unit added.' : 'Unit updated.',
+      );
       _load();
     }
   }
 
   Future<void> _openUnitTypes() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const UnitTypesScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const UnitTypesScreen()));
     if (mounted) _load();
   }
 
@@ -126,10 +129,10 @@ class _UnitsScreenState extends State<UnitsScreen> {
       title: 'Deactivate ${unit.name}?',
       message: upcoming == 0
           ? 'It will no longer be offered for new reservations. '
-              'Existing reservations are not affected.'
+                'Existing reservations are not affected.'
           : '$upcoming upcoming reservation${upcoming == 1 ? '' : 's'} '
-              'stay as they are. The unit will no longer be offered for new '
-              'reservations.',
+                'stay as they are. The unit will no longer be offered for new '
+                'reservations.',
       confirmLabel: 'Deactivate',
     );
     if (!confirmed) return;
@@ -196,9 +199,11 @@ class _UnitsScreenState extends State<UnitsScreen> {
         label: 'Delete',
         icon: Icons.delete_outline,
         destructive: true,
-        onPressed:
-            ConfigRules.canDeleteUnit(reservations) ? () => _delete(unit) : null,
-        disabledReason: 'Has $reservations reservation'
+        onPressed: ConfigRules.canDeleteUnit(reservations)
+            ? () => _delete(unit)
+            : null,
+        disabledReason:
+            'Has $reservations reservation'
             '${reservations == 1 ? '' : 's'} — deactivate instead',
       ),
     ];
@@ -208,15 +213,21 @@ class _UnitsScreenState extends State<UnitsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final showToolbar = !_loading && _error == null && _types.isNotEmpty;
+    // On desktop the Add button sits in the page header (it used to be at
+    // the end of the toolbar); phone and tablet keep it in the toolbar.
+    final addInHeader = showToolbar && ManagePage.usesDesktopLayout(context);
+
     return ManagePage(
       title: 'Units',
       onRefresh: _load,
-      children: [
-        const ManageIntro(
+      intro:
           'Everything guests can book: rooms, cottages, villas, pavilions, '
           'function halls and more.',
-        ),
-        if (!_loading && _error == null && _types.isNotEmpty) ...[
+      addLabel: addInHeader ? 'Add Unit' : null,
+      onAdd: addInHeader ? () => _openForm() : null,
+      children: [
+        if (showToolbar) ...[
           _buildToolbar(),
           const SizedBox(height: AppSpacing.md),
         ],
@@ -282,8 +293,10 @@ class _UnitsScreenState extends State<UnitsScreen> {
             Expanded(child: search),
             const SizedBox(width: 12),
             SizedBox(width: 220, child: typeDropdown),
-            const SizedBox(width: 12),
-            ManageAddButton(label: 'Add Unit', onPressed: () => _openForm()),
+            if (!ManagePage.usesDesktopLayout(context)) ...[
+              const SizedBox(width: 12),
+              ManageAddButton(label: 'Add Unit', onPressed: () => _openForm()),
+            ],
           ],
         ),
         const SizedBox(height: 12),
@@ -308,7 +321,8 @@ class _UnitsScreenState extends State<UnitsScreen> {
       return [
         ManageEmptyCard(
           icon: Icons.category_outlined,
-          message: 'Create a unit type first (for example "Cottage"), '
+          message:
+              'Create a unit type first (for example "Cottage"), '
               'then add units to it.',
           actionLabel: 'Go to Unit Types',
           onAction: _openUnitTypes,
@@ -355,16 +369,14 @@ class _UnitsScreenState extends State<UnitsScreen> {
                   Text(unit.name, style: AppText.valueStrong),
                   Text(_typeLabel(unit), style: AppText.body),
                   Text('${unit.capacity} guests', style: AppText.body),
-                  Text(
-                    '${_upcoming(unit)}',
-                    style: AppText.bodySecondary,
-                  ),
+                  Text('${_upcoming(unit)}', style: AppText.bodySecondary),
                   ActiveBadge(isActive: unit.isActive),
                   ManageActionIcons(actions: _actionsFor(unit)),
                 ],
               ),
           ],
-          footer: 'Showing ${units.length} of ${_units.length} '
+          footer:
+              'Showing ${units.length} of ${_units.length} '
               'unit${_units.length == 1 ? '' : 's'}',
         ),
       ];

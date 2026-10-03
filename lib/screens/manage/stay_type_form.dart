@@ -96,7 +96,8 @@ class _StayTypeFormState extends State<StayTypeForm> {
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked == null) return;
 
-    final value = '${picked.hour.toString().padLeft(2, '0')}:'
+    final value =
+        '${picked.hour.toString().padLeft(2, '0')}:'
         '${picked.minute.toString().padLeft(2, '0')}';
     setState(() {
       if (isCheckIn) {
@@ -109,12 +110,12 @@ class _StayTypeFormState extends State<StayTypeForm> {
   }
 
   String? get _timesProblem => ConfigRules.validateStayTimes(
-        checkInTime: _checkInTime,
-        checkOutTime: _checkOutTime,
-        endsNextDay: _endsNextDay,
-        allowMultipleNights: _allowMultipleNights,
-        pricingBasis: _pricingBasis,
-      );
+    checkInTime: _checkInTime,
+    checkOutTime: _checkOutTime,
+    endsNextDay: _endsNextDay,
+    allowMultipleNights: _allowMultipleNights,
+    pricingBasis: _pricingBasis,
+  );
 
   Future<void> _save() async {
     final formOk = _formKey.currentState!.validate();
@@ -161,7 +162,8 @@ class _StayTypeFormState extends State<StayTypeForm> {
 
   @override
   Widget build(BuildContext context) {
-    final timesChosen = ConfigRules.isValidTime(_checkInTime) &&
+    final timesChosen =
+        ConfigRules.isValidTime(_checkInTime) &&
         ConfigRules.isValidTime(_checkOutTime);
     final deactivatingLast =
         widget.existing != null && widget.isLastActive && !_isActive;
@@ -248,10 +250,10 @@ class _StayTypeFormState extends State<StayTypeForm> {
             onChanged: _saving
                 ? null
                 : (v) => setState(() {
-                      _endsNextDay = v;
-                      if (!v) _allowMultipleNights = false;
-                      _error = null;
-                    }),
+                    _endsNextDay = v;
+                    if (!v) _allowMultipleNights = false;
+                    _error = null;
+                  }),
           ),
           const SizedBox(height: 8),
           ManageSwitchRow(
@@ -263,9 +265,9 @@ class _StayTypeFormState extends State<StayTypeForm> {
             onChanged: (_saving || !_endsNextDay)
                 ? null
                 : (v) => setState(() {
-                      _allowMultipleNights = v;
-                      _error = null;
-                    }),
+                    _allowMultipleNights = v;
+                    _error = null;
+                  }),
           ),
           const SizedBox(height: 12),
           FieldLabel(
@@ -330,7 +332,8 @@ class _StayTypeFormState extends State<StayTypeForm> {
           const SizedBox(height: 12),
           ManageSwitchRow(
             label: 'Active',
-            description: 'Inactive stay types aren’t offered for new reservations.',
+            description:
+                'Inactive stay types aren’t offered for new reservations.',
             value: _isActive,
             onChanged: _saving ? null : (v) => setState(() => _isActive = v),
           ),

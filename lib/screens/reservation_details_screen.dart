@@ -7,23 +7,28 @@ import '../utils/currency_format.dart';
 import '../utils/date_format.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_header.dart';
+import '../widgets/confirm_dialog.dart';
+import '../widgets/desktop_page.dart';
+import '../widgets/guest_avatar.dart';
+import '../widgets/info_tile.dart';
+import '../widgets/panel_card.dart';
+import '../widgets/responsive.dart';
 import '../widgets/status_badge.dart';
 
+/// Reservation Details.
+///
+/// * Phone / tablet: the existing single-column card with pinned
+///   Edit / Delete buttons.
+/// * Desktop (sidebar shell): two columns — guest & reservation details and
+///   duration on the left (~60%), timeline, pricing and notes on the right.
+///
+/// Edit and Delete are placeholders on both layouts (Stage 6).
 class ReservationDetailsScreen extends StatelessWidget {
   final Reservation reservation;
 
   const ReservationDetailsScreen({super.key, required this.reservation});
 
-  String get _initials {
-    final parts = reservation.guestName
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts.first[0].toUpperCase();
-    return (parts.first[0] + parts.last[0]).toUpperCase();
-  }
+  String get _initials => GuestAvatar.initialsOf(reservation.guestName);
 
   void _showComingSoon(BuildContext context, String action) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -42,7 +47,7 @@ class ReservationDetailsScreen extends StatelessWidget {
     final nights = DateFormatUtil.nights(r.startAt, r.endAt);
     final range = r.isLegacy
         ? '${DateFormatUtil.monthDay(r.startAt)} – '
-            '${DateFormatUtil.monthDay(r.endAt)}'
+              '${DateFormatUtil.monthDay(r.endAt)}'
         : DateFormatUtil.stayRange(r.startAt, r.endAt);
     final length = nights == 0
         ? 'Same day'
@@ -50,161 +55,174 @@ class ReservationDetailsScreen extends StatelessWidget {
     return '${r.stayTypeDisplayName} · $length\n$range';
   }
 
+  String get _guestCountText => reservation.guestCount > 0
+      ? '${reservation.guestCount} '
+            'Guest${reservation.guestCount == 1 ? '' : 's'}'
+      : '—';
+
   @override
   Widget build(BuildContext context) {
+    if (DesktopShellScope.isInside(context)) return _buildDesktop(context);
+    return _buildMobile(context);
+  }
+
+  // ── Phone / tablet (unchanged layout, centred on tablets) ─────────────
+
+  Widget _buildMobile(BuildContext context) {
     final r = reservation;
     final unitName = r.unitDisplayName.isEmpty ? '—' : r.unitDisplayName;
-    final unitType = r.unitTypeDisplayName.isEmpty ? '—' : r.unitTypeDisplayName;
+    final unitType = r.unitTypeDisplayName.isEmpty
+        ? '—'
+        : r.unitTypeDisplayName;
 
     return Scaffold(
       appBar: const AppHeader(title: 'Reservation Details'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          children: [
-            AppCard(
-              padding: EdgeInsets.zero,
-              shadow: AppCard.largeShadow,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Guest header: initials avatar, name, status
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 56,
-                          height: 56,
-                          alignment: Alignment.center,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            _initials,
-                            style: AppText.headerTitle.copyWith(
-                              letterSpacing: 0.6,
+      body: ResponsiveContent(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            children: [
+              AppCard(
+                padding: EdgeInsets.zero,
+                shadow: AppCard.largeShadow,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Guest header: initials avatar, name, status
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            alignment: Alignment.center,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              _initials,
+                              style: AppText.headerTitle.copyWith(
+                                letterSpacing: 0.6,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                r.guestName,
-                                style: AppText.cardTitle.copyWith(
-                                  fontSize: 20,
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  r.guestName,
+                                  style: AppText.cardTitle.copyWith(
+                                    fontSize: 20,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              StatusBadge(
-                                status: r.status,
-                                fontSize: 11,
-                                horizontalPadding: 12,
-                              ),
-                            ],
+                                const SizedBox(height: 6),
+                                StatusBadge(
+                                  status: r.status,
+                                  fontSize: 11,
+                                  horizontalPadding: 12,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: AppColors.divider,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                    const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.divider,
                     ),
-                    child: Column(
-                      children: [
-                        _InfoRow(
-                          icon: Icons.phone,
-                          label: 'Contact Number',
-                          value: r.phone.isEmpty ? '—' : r.phone,
-                          showTopBorder: false,
-                        ),
-                        _InfoRow(
-                          icon: Icons.email,
-                          label: 'Email',
-                          value: r.email.isEmpty ? '—' : r.email,
-                        ),
-                        _InfoRow(
-                          icon: Icons.groups,
-                          label: 'Number of Guests',
-                          value: r.guestCount > 0
-                              ? '${r.guestCount} '
-                                  'Guest${r.guestCount == 1 ? '' : 's'}'
-                              : '—',
-                        ),
-                        _InfoRow(
-                          icon: Icons.meeting_room,
-                          label: 'Unit',
-                          value: unitName,
-                          subValue: unitType,
-                        ),
-                        _InfoRow(
-                          icon: Icons.schedule,
-                          label: 'Stay Type',
-                          value: r.stayTypeDisplayName,
-                          subValue: r.isLegacy
-                              ? 'Older reservation (no stay type saved)'
-                              : null,
-                        ),
-                        _InfoRow(
-                          icon: Icons.event_available,
-                          label: 'Check-in',
-                          value: _dateTime(r.startAt),
-                        ),
-                        _InfoRow(
-                          icon: Icons.event_busy,
-                          label: 'Check-out',
-                          value: _dateTime(r.endAt),
-                        ),
-                        _InfoRow(
-                          icon: Icons.sell,
-                          label: 'Reservation Status',
-                          valueWidget: StatusBadge(
-                            status: r.status,
-                            fontSize: 11,
-                            horizontalPadding: 12,
-                          ),
-                        ),
-                        if (r.notes.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Column(
+                        children: [
                           _InfoRow(
-                            icon: Icons.sticky_note_2,
-                            label: 'Notes',
-                            value: r.notes,
+                            icon: Icons.phone,
+                            label: 'Contact Number',
+                            value: r.phone.isEmpty ? '—' : r.phone,
+                            showTopBorder: false,
                           ),
-                        _InfoRow(
-                          icon: Icons.badge,
-                          label: 'Reservation ID',
-                          value: '#${r.id}',
-                        ),
-                      ],
+                          _InfoRow(
+                            icon: Icons.email,
+                            label: 'Email',
+                            value: r.email.isEmpty ? '—' : r.email,
+                          ),
+                          _InfoRow(
+                            icon: Icons.groups,
+                            label: 'Number of Guests',
+                            value: _guestCountText,
+                          ),
+                          _InfoRow(
+                            icon: Icons.meeting_room,
+                            label: 'Unit',
+                            value: unitName,
+                            subValue: unitType,
+                          ),
+                          _InfoRow(
+                            icon: Icons.schedule,
+                            label: 'Stay Type',
+                            value: r.stayTypeDisplayName,
+                            subValue: r.isLegacy
+                                ? 'Older reservation (no stay type saved)'
+                                : null,
+                          ),
+                          _InfoRow(
+                            icon: Icons.event_available,
+                            label: 'Check-in',
+                            value: _dateTime(r.startAt),
+                          ),
+                          _InfoRow(
+                            icon: Icons.event_busy,
+                            label: 'Check-out',
+                            value: _dateTime(r.endAt),
+                          ),
+                          _InfoRow(
+                            icon: Icons.sell,
+                            label: 'Reservation Status',
+                            valueWidget: StatusBadge(
+                              status: r.status,
+                              fontSize: 11,
+                              horizontalPadding: 12,
+                            ),
+                          ),
+                          if (r.notes.isNotEmpty)
+                            _InfoRow(
+                              icon: Icons.sticky_note_2,
+                              label: 'Notes',
+                              value: r.notes,
+                            ),
+                          _InfoRow(
+                            icon: Icons.badge,
+                            label: 'Reservation ID',
+                            value: '#${r.id}',
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
 
-            // Duration summary
-            _TintCard(
-              icon: Icons.nightlight_round,
-              label: 'Duration',
-              value: _durationText,
-            ),
-            const SizedBox(height: AppSpacing.md),
+              // Duration summary
+              _TintCard(
+                icon: Icons.nightlight_round,
+                label: 'Duration',
+                value: _durationText,
+              ),
+              const SizedBox(height: AppSpacing.md),
 
-            // Pricing (snapshot saved with the reservation)
-            _PricingCard(reservation: r),
-          ],
+              // Pricing (snapshot saved with the reservation)
+              _PricingCard(reservation: r),
+            ],
+          ),
         ),
       ),
 
@@ -216,35 +234,408 @@ class ReservationDetailsScreen extends StatelessWidget {
         ),
         child: SafeArea(
           top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                FilledButton.icon(
-                  onPressed: () => _showComingSoon(context, 'Editing'),
-                  icon: const Icon(Icons.edit_note, size: 20),
-                  label: const Text('Edit Reservation'),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: () => _showComingSoon(context, 'Deleting'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.cancelled,
-                    backgroundColor: AppColors.surface,
-                    side: const BorderSide(
-                      color: AppColors.cancelled,
-                      width: 2,
+          // heightFactor keeps the bar as short as its buttons.
+          child: Align(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () => _showComingSoon(context, 'Editing'),
+                      icon: const Icon(Icons.edit_note, size: 20),
+                      label: const Text('Edit Reservation'),
                     ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => _showComingSoon(context, 'Deleting'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.cancelled,
+                        backgroundColor: AppColors.surface,
+                        side: const BorderSide(
+                          color: AppColors.cancelled,
+                          width: 2,
+                        ),
+                      ),
+                      icon: const Icon(Icons.delete, size: 18),
+                      label: const Text('Delete Reservation'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Desktop ────────────────────────────────────────────────────────────
+
+  Widget _buildDesktop(BuildContext context) {
+    final r = reservation;
+
+    return DesktopPage(
+      title: 'Reservation Details',
+      subtitle: r.guestName.isEmpty ? null : 'Booking for ${r.guestName}',
+      breadcrumbs: [
+        BreadcrumbItem(
+          'Reservations',
+          onTap: () =>
+              DesktopShellScope.navigate(context, ShellSection.reservations),
+        ),
+        const BreadcrumbItem('Reservation Details'),
+      ],
+      actions: [
+        // Placeholders until the Stage 6 edit / delete workflows exist.
+        OutlinedButton.icon(
+          style: CompactButtons.outlined(),
+          onPressed: () => _showComingSoon(context, 'Editing'),
+          icon: const Icon(Icons.edit_outlined, size: 18),
+          label: const Text('Edit'),
+        ),
+        OutlinedButton.icon(
+          style: CompactButtons.outlined(color: AppColors.cancelled),
+          onPressed: () => _showComingSoon(context, 'Deleting'),
+          icon: const Icon(Icons.delete_outline, size: 18),
+          label: const Text('Delete'),
+        ),
+      ],
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildDesktopGuestCard(),
+                  const SizedBox(height: AppSpacing.lg),
+                  _TintCard(
+                    icon: Icons.nightlight_round,
+                    label: 'Duration',
+                    value: _durationText,
                   ),
-                  icon: const Icon(Icons.delete, size: 18),
-                  label: const Text('Delete Reservation'),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PanelCard(
+                    title: 'Reservation Timeline',
+                    icon: Icons.timeline,
+                    child: _Timeline(reservation: r),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PanelCard(
+                    title: 'Pricing',
+                    icon: Icons.payments_outlined,
+                    subtitle: 'Saved when the reservation was made',
+                    child: _PricingContent(reservation: r),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PanelCard(
+                    title: 'Notes',
+                    icon: Icons.sticky_note_2_outlined,
+                    child: r.notes.trim().isEmpty
+                        ? Row(
+                            children: [
+                              const Icon(
+                                Icons.notes,
+                                size: 18,
+                                color: AppColors.textMuted,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'No notes for this reservation.',
+                                  style: AppText.bodySecondary.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : SelectableText(r.notes, style: AppText.body),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopGuestCard() {
+    final r = reservation;
+    final tiles = <Widget>[
+      InfoTile(label: 'Contact Number', value: r.phone, icon: Icons.phone),
+      InfoTile(label: 'Reservation ID', value: '#${r.id}', icon: Icons.badge),
+      InfoTile(label: 'Email', value: r.email, icon: Icons.email),
+      InfoTile(
+        label: 'Status',
+        icon: Icons.sell,
+        valueWidget: Align(
+          alignment: Alignment.centerLeft,
+          child: StatusBadge(status: r.status, fontSize: 11),
+        ),
+      ),
+      InfoTile(
+        label: 'Guests',
+        value: _guestCountText == '—' ? '' : _guestCountText,
+        icon: Icons.groups,
+      ),
+      InfoTile(
+        label: 'Stay Type',
+        value: r.stayTypeDisplayName,
+        icon: Icons.schedule,
+        supportingText: r.isLegacy
+            ? 'Older reservation (no stay type saved)'
+            : null,
+      ),
+      InfoTile(
+        label: 'Unit',
+        value: r.unitDisplayName,
+        icon: Icons.meeting_room,
+      ),
+      InfoTile(
+        label: 'Unit Type',
+        value: r.unitTypeDisplayName,
+        icon: Icons.category_outlined,
+      ),
+      InfoTile(
+        label: 'Check-in',
+        value: _dateTime(r.startAt),
+        icon: Icons.event_available,
+      ),
+      InfoTile(
+        label: 'Check-out',
+        value: _dateTime(r.endAt),
+        icon: Icons.event_busy,
+      ),
+    ];
+
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                GuestAvatar(name: r.guestName, size: 64),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        r.guestName.isEmpty ? '—' : r.guestName,
+                        style: AppText.cardTitle.copyWith(fontSize: 22),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          StatusBadge(
+                            status: r.status,
+                            fontSize: 11,
+                            horizontalPadding: 12,
+                          ),
+                          Text(
+                            '${r.stayTypeDisplayName} · '
+                            '${r.unitDisplayName.isEmpty ? '—' : r.unitDisplayName}',
+                            style: AppText.bodySecondary,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ),
+          const Divider(height: 1, thickness: 1, color: AppColors.divider),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const gap = AppSpacing.lg;
+                final columns = constraints.maxWidth >= 420 ? 2 : 1;
+                final width =
+                    (constraints.maxWidth - gap * (columns - 1)) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: 20,
+                  children: [
+                    for (final tile in tiles)
+                      SizedBox(width: width, child: tile),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Booking Created → Check-in → Check-out, with past milestones filled in.
+class _Timeline extends StatelessWidget {
+  final Reservation reservation;
+
+  const _Timeline({required this.reservation});
+
+  String _when(DateTime d) => reservation.isLegacy
+      ? DateFormatUtil.long(d)
+      : DateFormatUtil.shortWithTime(d);
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reservation;
+    final now = DateTime.now();
+    final created = r.createdAt;
+
+    final items = <_TimelineItem>[
+      _TimelineItem(
+        icon: Icons.add_task,
+        title: 'Booking Created',
+        subtitle: created == null
+            ? 'Not recorded'
+            : DateFormatUtil.shortWithTime(created),
+        done: created != null,
+      ),
+      _TimelineItem(
+        icon: Icons.login,
+        title: 'Check-in',
+        subtitle: _when(r.startAt),
+        done: !r.isCancelled && !r.startAt.isAfter(now),
+        muted: r.isCancelled,
+      ),
+      _TimelineItem(
+        icon: Icons.logout,
+        title: 'Check-out',
+        subtitle: _when(r.endAt),
+        done: !r.isCancelled && !r.endAt.isAfter(now),
+        muted: r.isCancelled,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < items.length; i++)
+          _TimelineRow(item: items[i], isLast: i == items.length - 1),
+        if (r.isCancelled)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            child: Text(
+              'This reservation was cancelled.',
+              style: AppText.caption.copyWith(color: AppColors.cancelled),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _TimelineItem {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool done;
+  final bool muted;
+
+  const _TimelineItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.done,
+    this.muted = false,
+  });
+}
+
+class _TimelineRow extends StatelessWidget {
+  final _TimelineItem item;
+  final bool isLast;
+
+  const _TimelineRow({required this.item, required this.isLast});
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color = item.muted
+        ? AppColors.textDisabled
+        : (item.done ? AppColors.checkedIn : AppColors.primary);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 32,
+            child: Column(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: item.done ? color : AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 2),
+                  ),
+                  child: Icon(
+                    item.done ? Icons.check : item.icon,
+                    size: 16,
+                    color: item.done ? Colors.white : color,
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: item.done ? AppColors.checkedIn : AppColors.border,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: 4, bottom: isLast ? 0 : 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: AppText.valueStrong.copyWith(
+                      color: item.muted
+                          ? AppColors.textMuted
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(item.subtitle, style: AppText.caption),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -297,8 +688,7 @@ class _InfoRow extends StatelessWidget {
               children: [
                 Text(label.toUpperCase(), style: AppText.overline),
                 SizedBox(height: valueWidget != null ? 4 : 2),
-                valueWidget ??
-                    Text(value ?? '', style: AppText.valueStrong),
+                valueWidget ?? Text(value ?? '', style: AppText.valueStrong),
                 if (subValue != null && subValue!.isNotEmpty)
                   Text(subValue!, style: AppText.bodySecondary),
               ],
@@ -352,9 +742,7 @@ class _TintCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: AppText.valueStrong.copyWith(
-                    color: AppColors.primary,
-                  ),
+                  style: AppText.valueStrong.copyWith(color: AppColors.primary),
                 ),
               ],
             ),
@@ -365,11 +753,33 @@ class _TintCard extends StatelessWidget {
   }
 }
 
-/// Rate, pricing basis, quantity and total saved with the reservation (₱).
+/// Phone pricing card: "PRICING" label + [_PricingContent].
 class _PricingCard extends StatelessWidget {
   final Reservation reservation;
 
   const _PricingCard({required this.reservation});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('PRICING', style: AppText.overline),
+          const SizedBox(height: 8),
+          _PricingContent(reservation: reservation),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rate, pricing basis, quantity and total saved with the reservation (₱).
+class _PricingContent extends StatelessWidget {
+  final Reservation reservation;
+
+  const _PricingContent({required this.reservation});
 
   @override
   Widget build(BuildContext context) {
@@ -382,45 +792,40 @@ class _PricingCard extends StatelessWidget {
     final quantityLabel = r.quantity <= 0
         ? '—'
         : perNight
-            ? '${r.quantity} night${r.quantity == 1 ? '' : 's'}'
-            : '${r.quantity} stay${r.quantity == 1 ? '' : 's'}';
+        ? '${r.quantity} night${r.quantity == 1 ? '' : 's'}'
+        : '${r.quantity} stay${r.quantity == 1 ? '' : 's'}';
 
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('PRICING', style: AppText.overline),
-          const SizedBox(height: 8),
-          if (!hasPrice)
-            const Text(
-              'No price was recorded for this reservation.',
-              style: AppText.bodySecondary,
-            )
-          else ...[
-            _priceRow('Rate', CurrencyFormat.peso(r.rate)),
-            _priceRow('Pricing basis', basisLabel),
-            _priceRow('Quantity', quantityLabel),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Divider(height: 1, thickness: 1, color: AppColors.divider),
-            ),
-            Row(
-              children: [
-                const Text('Total', style: AppText.valueStrong),
-                const Spacer(),
-                Text(
-                  CurrencyFormat.peso(r.totalAmount),
-                  style: AppText.cardTitle.copyWith(
-                    fontSize: 20,
-                    color: AppColors.primary,
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!hasPrice)
+          const Text(
+            'No price was recorded for this reservation.',
+            style: AppText.bodySecondary,
+          )
+        else ...[
+          _priceRow('Rate', CurrencyFormat.peso(r.rate)),
+          _priceRow('Pricing basis', basisLabel),
+          _priceRow('Quantity', quantityLabel),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Divider(height: 1, thickness: 1, color: AppColors.divider),
+          ),
+          Row(
+            children: [
+              const Text('Total', style: AppText.valueStrong),
+              const Spacer(),
+              Text(
+                CurrencyFormat.peso(r.totalAmount),
+                style: AppText.cardTitle.copyWith(
+                  fontSize: 20,
+                  color: AppColors.primary,
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ],
-      ),
+      ],
     );
   }
 

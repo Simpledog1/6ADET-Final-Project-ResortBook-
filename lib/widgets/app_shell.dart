@@ -12,19 +12,6 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'responsive.dart';
 
-/// Sections reachable from the desktop sidebar.
-enum ShellSection {
-  dashboard,
-  reservations,
-  calendar,
-  addReservation,
-  manageResort,
-  unitTypes,
-  units,
-  stayTypes,
-  rates,
-}
-
 /// Root of the app.
 ///
 /// * Phone / tablet (< 1024px): the existing mobile flow, starting at the
@@ -76,19 +63,12 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  bool get _isManageSection =>
-      _section.index >= ShellSection.manageResort.index;
-
   @override
   Widget build(BuildContext context) {
     if (!Breakpoints.isDesktop(context)) {
       // Mobile / tablet keep the existing navigation (Dashboard hub).
       return const DashboardScreen();
     }
-
-    // Existing reservation screens are mobile-first designs, so they are
-    // kept to a comfortable width; Manage Resort pages use more room.
-    final maxContentWidth = _isManageSection ? 1280.0 : 760.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -103,17 +83,18 @@ class _AppShellState extends State<AppShell> {
                 _Sidebar(selected: _section, onSelect: _select),
                 Expanded(
                   child: DesktopShellScope(
-                    child: ResponsiveContent(
-                      maxWidth: maxContentWidth,
-                      // A nested navigator can't share the app's
-                      // HeroController, so it gets its own (empty) scope.
-                      child: HeroControllerScope.none(
-                        child: Navigator(
-                          key: ValueKey('shell-$_navigationCount'),
-                          onGenerateRoute: (settings) => MaterialPageRoute(
-                            settings: settings,
-                            builder: (_) => _pageFor(_section),
-                          ),
+                    onNavigate: _select,
+                    // Every desktop page uses DesktopPage, which limits its
+                    // own content width (1440px) and draws the page header.
+                    //
+                    // A nested navigator can't share the app's
+                    // HeroController, so it gets its own (empty) scope.
+                    child: HeroControllerScope.none(
+                      child: Navigator(
+                        key: ValueKey('shell-$_navigationCount'),
+                        onGenerateRoute: (settings) => MaterialPageRoute(
+                          settings: settings,
+                          builder: (_) => _pageFor(_section),
                         ),
                       ),
                     ),
@@ -194,7 +175,11 @@ class _Sidebar extends StatelessWidget {
             Icons.assignment_outlined,
             'Reservations',
           ),
-          item(ShellSection.calendar, Icons.calendar_month_outlined, 'Calendar'),
+          item(
+            ShellSection.calendar,
+            Icons.calendar_month_outlined,
+            'Calendar',
+          ),
           item(ShellSection.addReservation, Icons.add, 'Add Reservation'),
           const SizedBox(height: 20),
           const _SidebarLabel('Resort setup'),

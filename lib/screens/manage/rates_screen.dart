@@ -97,11 +97,10 @@ class _RatesScreenState extends State<RatesScreen> {
     return ManagePage(
       title: 'Rates',
       onRefresh: _load,
-      children: [
-        const ManageIntro(
+      intro:
           'Set the price for each unit type and stay type. A missing rate '
           'blocks new reservations for that combination.',
-        ),
+      children: [
         const FormMessage(
           'Changes to rates only affect new reservations. Existing '
           'reservations keep the rate and total saved when they were booked.',
@@ -140,9 +139,9 @@ class _RatesScreenState extends State<RatesScreen> {
           child: Text(
             missing.isEmpty
                 ? '${_rates.length} rate${_rates.length == 1 ? '' : 's'} '
-                    'configured · every active combination has a rate'
+                      'configured · every active combination has a rate'
                 : '${_rates.length} rate${_rates.length == 1 ? '' : 's'} '
-                    'configured · ${missing.length} missing',
+                      'configured · ${missing.length} missing',
             style: AppText.value.copyWith(
               color: missing.isEmpty
                   ? AppColors.checkedIn
@@ -164,7 +163,8 @@ class _RatesScreenState extends State<RatesScreen> {
         const SizedBox(height: 12),
         const ManageEmptyCard(
           icon: Icons.payments_outlined,
-          message: 'Add at least one active unit type and stay type first, '
+          message:
+              'Add at least one active unit type and stay type first, '
               'then set their rates here.',
         ),
       ];

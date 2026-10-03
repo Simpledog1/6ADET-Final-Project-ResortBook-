@@ -87,7 +87,11 @@ void main() {
 
     test('Overnight with 0 nights is invalid', () {
       expect(
-        BookingLogic.computeWindow(stayType: overnight, date: june15, nights: 0),
+        BookingLogic.computeWindow(
+          stayType: overnight,
+          date: june15,
+          nights: 0,
+        ),
         isNull,
       );
     });
@@ -124,18 +128,22 @@ void main() {
       expect(w.end, DateTime(2026, 6, 16, 6));
     });
 
-    test('a same-day stay type whose check-out is before check-in is invalid',
-        () {
-      const broken = StayType(
-        id: 'x',
-        name: 'Broken',
-        checkInTime: '17:00',
-        checkOutTime: '08:00',
-        endsNextDay: false,
-      );
-      expect(BookingLogic.computeWindow(stayType: broken, date: june15),
-          isNull);
-    });
+    test(
+      'a same-day stay type whose check-out is before check-in is invalid',
+      () {
+        const broken = StayType(
+          id: 'x',
+          name: 'Broken',
+          checkInTime: '17:00',
+          checkOutTime: '08:00',
+          endsNextDay: false,
+        );
+        expect(
+          BookingLogic.computeWindow(stayType: broken, date: june15),
+          isNull,
+        );
+      },
+    );
   });
 
   group('nightsBetween', () {
@@ -146,8 +154,10 @@ void main() {
   });
 
   group('findConflicts', () {
-    final overnightWindow =
-        BookingLogic.computeWindow(stayType: overnight, date: june15)!;
+    final overnightWindow = BookingLogic.computeWindow(
+      stayType: overnight,
+      date: june15,
+    )!;
 
     test('same unit with overlapping times conflicts', () {
       final existing = [
@@ -230,8 +240,10 @@ void main() {
     });
 
     test('Day Tour then Night Tour on the same day does not overlap', () {
-      final nightWindow =
-          BookingLogic.computeWindow(stayType: nightTour, date: june15)!;
+      final nightWindow = BookingLogic.computeWindow(
+        stayType: nightTour,
+        date: june15,
+      )!;
       expect(
         BookingLogic.findConflicts(
           unitId: 'unit_a',
@@ -308,8 +320,18 @@ void main() {
 
   group('pricing', () {
     const rates = [
-      Rate(id: 'r1', unitTypeId: 'ut_cottage', stayTypeId: 'st_overnight', price: 2500),
-      Rate(id: 'r2', unitTypeId: 'ut_cottage', stayTypeId: 'st_day', price: 800),
+      Rate(
+        id: 'r1',
+        unitTypeId: 'ut_cottage',
+        stayTypeId: 'st_overnight',
+        price: 2500,
+      ),
+      Rate(
+        id: 'r2',
+        unitTypeId: 'ut_cottage',
+        stayTypeId: 'st_day',
+        price: 800,
+      ),
     ];
 
     test('per_night multiplies by the number of nights', () {
