@@ -1,7 +1,8 @@
-// Location: lib/screens/dashboard_screen.dart
 import 'package:flutter/material.dart';
 import '../theme/app_spacing.dart';
 import 'add_reservation_screen.dart';
+import 'reservation_list_screen.dart';
+import 'calendar_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,11 +14,12 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
+  // Fully integrated screens through Phase 8
   final List<Widget> _screens = [
     const DashboardContent(),
     const AddReservationScreen(),
-    const Center(child: Text('List Screen - Phase 5')),
-    const Center(child: Text('Calendar Screen - Phase 7')),
+    const ReservationListScreen(),
+    const CalendarScreen(),
   ];
 
   @override
@@ -103,7 +105,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// Extracted into its own separate class outside of _DashboardScreenState
 class DashboardContent extends StatelessWidget {
   const DashboardContent({super.key});
 

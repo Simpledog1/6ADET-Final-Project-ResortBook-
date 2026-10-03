@@ -242,7 +242,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
                       labelText: 'Assign Room',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedRoom,
+                    initialValue: _selectedRoom,
                     items: _rooms.map((room) {
                       return DropdownMenuItem(
                         value: room,
