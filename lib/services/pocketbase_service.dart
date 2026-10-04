@@ -1,5 +1,6 @@
 import 'package:pocketbase/pocketbase.dart';
 import 'package:flutter/foundation.dart';
+import '../logic/reservation_workflow.dart';
 import '../models/reservation.dart';
 import '../models/stay_type.dart';
 import '../models/unit.dart';
@@ -109,7 +110,7 @@ class PocketBaseService {
     StayType? stayType,
     required DateTime startAt,
     required DateTime endAt,
-    String status = 'Reserved',
+    String status = ReservationStatus.reserved,
     String notes = '',
     double rate = 0,
     PricingBasis? rateBasis,

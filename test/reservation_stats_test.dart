@@ -224,6 +224,49 @@ void main() {
     });
   });
 
+  group('Completed reservations', () {
+    // Checked out early: the booked end time hasn't passed yet.
+    final list = [
+      booking(
+        'leftEarly',
+        unitId: 'cottage_a',
+        start: DateTime(2026, 11, 10, 14),
+        end: DateTime(2026, 11, 12, 12),
+        status: 'Completed',
+      ),
+      booking(
+        'checkedIn',
+        unitId: 'cottage_b',
+        start: DateTime(2026, 11, 10, 14),
+        end: DateTime(2026, 11, 12, 12),
+        status: 'Checked In',
+      ),
+      booking(
+        'cancelled',
+        unitId: 'villa',
+        start: DateTime(2026, 11, 11, 8),
+        end: DateTime(2026, 11, 11, 17),
+        status: 'Cancelled',
+      ),
+    ];
+
+    test('are not staying now', () {
+      expect(ids(ReservationStats.stayingNow(list, now)), ['checkedIn']);
+    });
+
+    test('do not occupy a unit now', () {
+      expect(ReservationStats.unitsOccupiedNow(list, now), 1);
+    });
+
+    test('are not upcoming', () {
+      expect(ids(ReservationStats.upcoming(list, now)), ['checkedIn']);
+    });
+
+    test('still count as reservations this month', () {
+      expect(ReservationStats.reservationsThisMonth(list, now), 2);
+    });
+  });
+
   group('recentlyAdded', () {
     test('newest created first, skips missing timestamps, max 5', () {
       final d = DateTime(2026, 11, 10);

@@ -146,7 +146,7 @@ class AdminTable extends StatelessWidget {
                         ? const SizedBox.shrink()
                         : Text(footer!, style: AppText.caption),
                   ),
-                  if (pagination != null) pagination!,
+                  ?pagination,
                 ],
               ),
             ),

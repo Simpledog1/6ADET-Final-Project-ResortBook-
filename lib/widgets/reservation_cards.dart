@@ -155,7 +155,7 @@ class ReservationListCard extends StatelessWidget {
   }
 }
 
-/// Calendar "Reservations on <day>" card: tinted status, unit,
+/// Calendar "Reservations on `<day>`" card: tinted status, unit,
 /// stay type + guests, divider, start → end with times.
 class CalendarReservationCard extends StatelessWidget {
   final Reservation reservation;

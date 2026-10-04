@@ -1,4 +1,5 @@
 import '../models/reservation.dart';
+import 'reservation_workflow.dart';
 
 /// Status groups used by the filter chips and counts.
 enum ReservationStatusFilter { all, reserved, checkedIn, completed, cancelled }
@@ -22,13 +23,26 @@ class ReservationStats {
   /// "Canceled"…). Empty or unknown text counts as Reserved, matching how
   /// the status badge displays it.
   static ReservationStatusFilter statusGroup(String status) {
-    final s = status.toLowerCase().replaceAll(RegExp(r'[\s_-]'), '');
-    if (s.contains('cancel')) return ReservationStatusFilter.cancelled;
-    if (s == 'checkedin') return ReservationStatusFilter.checkedIn;
-    if (s == 'completed' || s == 'checkedout') {
-      return ReservationStatusFilter.completed;
+    switch (ReservationStatus.normalize(status)) {
+      case ReservationStatus.cancelled:
+        return ReservationStatusFilter.cancelled;
+      case ReservationStatus.checkedIn:
+        return ReservationStatusFilter.checkedIn;
+      case ReservationStatus.completed:
+        return ReservationStatusFilter.completed;
+      default:
+        return ReservationStatusFilter.reserved;
     }
-    return ReservationStatusFilter.reserved;
+  }
+
+  /// Cancelled and Completed reservations don't count as staying,
+  /// occupying a unit or upcoming (a Completed guest has already left,
+  /// even if the booked end time hasn't passed). Availability is not
+  /// affected by this.
+  static bool _isOpen(Reservation r) {
+    final status = ReservationStatus.normalize(r.status);
+    return status != ReservationStatus.cancelled &&
+        status != ReservationStatus.completed;
   }
 
   static bool matchesStatus(
@@ -85,7 +99,7 @@ class ReservationStats {
         .length;
   }
 
-  /// Non-cancelled reservations in progress at [now]
+  /// Reservations in progress at [now], not cancelled or completed
   /// (`startAt <= now < endAt`).
   static List<Reservation> stayingNow(
     Iterable<Reservation> reservations,
@@ -93,8 +107,7 @@ class ReservationStats {
   ) {
     return reservations
         .where(
-          (r) =>
-              !r.isCancelled && !r.startAt.isAfter(now) && r.endAt.isAfter(now),
+          (r) => _isOpen(r) && !r.startAt.isAfter(now) && r.endAt.isAfter(now),
         )
         .toList()
       ..sort((a, b) => a.endAt.compareTo(b.endAt));
@@ -130,7 +143,8 @@ class ReservationStats {
     ).map((r) => r.unitId).where((id) => id.isNotEmpty).toSet().length;
   }
 
-  /// Non-cancelled reservations that haven't ended yet, soonest first
+  /// Reservations that haven't ended yet (not cancelled or completed),
+  /// soonest first
   /// (the dashboard's "Upcoming Reservations").
   static List<Reservation> upcoming(
     Iterable<Reservation> reservations,
@@ -138,9 +152,7 @@ class ReservationStats {
     int limit = 3,
   }) {
     final list =
-        reservations
-            .where((r) => !r.isCancelled && r.endAt.isAfter(now))
-            .toList()
+        reservations.where((r) => _isOpen(r) && r.endAt.isAfter(now)).toList()
           ..sort((a, b) => a.startAt.compareTo(b.startAt));
     return list.take(limit).toList();
   }

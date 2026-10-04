@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../logic/reservation_workflow.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
@@ -10,31 +11,29 @@ class StatusStyle {
 
   const StatusStyle(this.color, this.tint, this.dot);
 
+  /// Uses the same status rules as the rest of the app
+  /// ([ReservationStatus.normalize]).
   static StatusStyle of(String status) {
-    final s = status.toLowerCase().replaceAll(RegExp(r'[\s_-]'), '');
-    switch (s) {
-      case 'checkedin':
+    switch (ReservationStatus.normalize(status)) {
+      case ReservationStatus.checkedIn:
         return const StatusStyle(
           AppColors.checkedIn,
           AppColors.checkedInTint,
           AppColors.checkedIn,
         );
-      case 'completed':
-      case 'checkedout':
+      case ReservationStatus.completed:
         return const StatusStyle(
           AppColors.completed,
           AppColors.completedTint,
           AppColors.completed,
         );
-      case 'cancelled':
-      case 'canceled':
+      case ReservationStatus.cancelled:
         return const StatusStyle(
           AppColors.cancelled,
           AppColors.cancelledTint,
           AppColors.cancelledDot,
         );
-      case 'reserved':
-      default:
+      default: // Reserved
         return const StatusStyle(
           AppColors.reserved,
           AppColors.primaryTint,

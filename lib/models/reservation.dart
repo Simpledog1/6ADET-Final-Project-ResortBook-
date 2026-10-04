@@ -16,7 +16,7 @@ class Reservation {
   final String email;
   final int guestCount;
 
-  /// Relation id of the booked unit (`unit` field, formerly `assignedRoomId`).
+  /// Relation id of the booked unit (`unit` field).
   final String unitId;
 
   /// The linked unit, when fetched with `expand=unit` (or `unit.unitType`).
@@ -135,15 +135,4 @@ class Reservation {
   bool get isLegacy => stayTypeId.isEmpty;
 
   bool get isCancelled => status.toLowerCase().contains('cancel');
-
-  // ── Temporary compatibility aliases (removed after the migration) ────
-
-  /// Alias of [startAt] for screens not yet updated (Stage 1 compatibility).
-  DateTime get checkInDate => startAt;
-
-  /// Alias of [endAt] for screens not yet updated (Stage 1 compatibility).
-  DateTime get checkOutDate => endAt;
-
-  /// Alias of [unitId] (Stage 1 compatibility).
-  String get assignedRoomId => unitId;
 }

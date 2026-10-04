@@ -4,7 +4,7 @@ import '../logic/reservation_stats.dart';
 import '../models/reservation.dart';
 import '../models/unit.dart';
 import '../services/config_service.dart';
-import '../services/pocketbase_service.dart';
+import '../services/reservation_gateway.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
@@ -44,7 +44,18 @@ class _SetupData {
 ///   reservations, recently added bookings, quick actions and a setup
 ///   warning when the resort configuration has problems.
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
+  /// Current time for the stats; tests pass a fixed clock. Defaults to
+  /// [DateTime.now].
+  final DateTime Function()? clock;
+
+  const DashboardScreen({
+    super.key,
+    this.gateway = const ReservationGateway(),
+    this.clock,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -59,22 +70,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _reservationsFuture = PocketBaseService.getReservations();
+    _reservationsFuture = widget.gateway.getReservations();
   }
 
   void _reload() {
     setState(() {
-      _reservationsFuture = PocketBaseService.getReservations();
+      _reservationsFuture = widget.gateway.getReservations();
       if (_setupFuture != null) _setupFuture = _loadSetup();
     });
   }
 
   /// Same configuration reads as the Manage Resort hub.
   Future<_SetupData> _loadSetup() async {
-    final unitTypes = await ConfigService.getUnitTypes();
-    final units = await ConfigService.getUnits();
-    final stayTypes = await ConfigService.getStayTypes();
-    final rates = await ConfigService.getRates();
+    final gateway = widget.gateway;
+    final unitTypes = await gateway.getUnitTypes();
+    final units = await gateway.getUnits();
+    final stayTypes = await gateway.getStayTypes();
+    final rates = await gateway.getRates();
     return _SetupData(
       units: units,
       issues: ConfigRules.setupChecklist(
@@ -85,6 +97,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+
+  DateTime _now() => widget.clock?.call() ?? DateTime.now();
+
+  Widget _details(Reservation res) =>
+      ReservationDetailsScreen(reservation: res, gateway: widget.gateway);
 
   /// Opens a screen and refreshes the dashboard when the user comes back,
   /// so new reservations show up immediately.
@@ -142,7 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   }
                   final upcoming = ReservationStats.upcoming(
                     snapshot.data ?? [],
-                    DateTime.now(),
+                    _now(),
                   );
                   if (upcoming.isEmpty) {
                     return const EmptyStateCard(
@@ -155,8 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       for (final res in upcoming) ...[
                         UpcomingReservationCard(
                           reservation: res,
-                          onTap: () =>
-                              _open(ReservationDetailsScreen(reservation: res)),
+                          onTap: () => _open(_details(res)),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -168,19 +184,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _HubButton(
                 icon: Icons.edit_calendar_outlined,
                 label: 'Add Reservation',
-                onPressed: () => _open(const AddReservationScreen()),
+                onPressed: () =>
+                    _open(AddReservationScreen(gateway: widget.gateway)),
               ),
               const SizedBox(height: 12),
               _HubButton(
                 icon: Icons.format_list_bulleted,
                 label: 'View Reservations',
-                onPressed: () => _open(const ReservationListScreen()),
+                onPressed: () =>
+                    _open(ReservationListScreen(gateway: widget.gateway)),
               ),
               const SizedBox(height: 12),
               _HubButton(
                 icon: Icons.calendar_today_outlined,
                 label: 'View Calendar',
-                onPressed: () => _open(const CalendarScreen()),
+                onPressed: () => _open(CalendarScreen(gateway: widget.gateway)),
               ),
               const SizedBox(height: 12),
               // Resort configuration (Stage 4). Outlined to keep the three
@@ -213,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildDesktop(BuildContext context) {
     _setupFuture ??= _loadSetup();
-    final now = DateTime.now();
+    final now = _now();
 
     return DesktopPage(
       title: _greeting(now),
@@ -249,7 +267,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
             if (snapshot.hasError) {
               return LoadErrorCard(
-                message: 'Could not load reservations.\n${snapshot.error}',
+                message:
+                    'Could not load reservations.\n'
+                    '${ConfigService.friendlyError(snapshot.error!)}',
                 onRetry: _reload,
               );
             }
@@ -348,11 +368,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: i < upcoming.length
                         ? _UpcomingCard(
                             reservation: upcoming[i],
-                            onView: () => _open(
-                              ReservationDetailsScreen(
-                                reservation: upcoming[i],
-                              ),
-                            ),
+                            onView: () => _open(_details(upcoming[i])),
                           )
                         : const SizedBox.shrink(),
                   ),
@@ -385,11 +401,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _RecentRow(
                               reservation: recent[i],
                               showDivider: i > 0,
-                              onTap: () => _open(
-                                ReservationDetailsScreen(
-                                  reservation: recent[i],
-                                ),
-                              ),
+                              onTap: () => _open(_details(recent[i])),
                             ),
                         ],
                       ),

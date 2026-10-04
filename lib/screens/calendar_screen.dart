@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../logic/calendar_logic.dart';
+import '../logic/reservation_workflow.dart';
 import '../models/reservation.dart';
-import '../services/pocketbase_service.dart';
+import '../services/config_service.dart';
+import '../services/reservation_gateway.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
@@ -29,7 +31,18 @@ import 'reservation_details_screen.dart';
 /// Which bookings belong on which day comes from [CalendarLogic] (a booking
 /// shows on every day its actual time window touches).
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
+  /// Current time (which month and day open first); tests pass a fixed
+  /// clock. Defaults to [DateTime.now].
+  final DateTime Function()? clock;
+
+  const CalendarScreen({
+    super.key,
+    this.gateway = const ReservationGateway(),
+    this.clock,
+  });
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -43,15 +56,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   void initState() {
     super.initState();
-    final today = DateFormatUtil.dateOnly(DateTime.now());
+    final today = DateFormatUtil.dateOnly(_now());
     _selectedDay = today;
     _focusedMonth = DateTime(today.year, today.month);
-    _reservationsFuture = PocketBaseService.getReservations();
+    _reservationsFuture = widget.gateway.getReservations();
   }
 
   void _reload() {
     setState(() {
-      _reservationsFuture = PocketBaseService.getReservations();
+      _reservationsFuture = widget.gateway.getReservations();
     });
   }
 
@@ -61,8 +74,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
+  DateTime _now() => widget.clock?.call() ?? DateTime.now();
+
   void _goToToday() {
-    final today = DateFormatUtil.dateOnly(DateTime.now());
+    final today = DateFormatUtil.dateOnly(_now());
     setState(() {
       _selectedDay = today;
       _focusedMonth = DateTime(today.year, today.month);
@@ -87,16 +102,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<void> _openDetails(Reservation res) async {
     final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => ReservationDetailsScreen(reservation: res),
+        builder: (_) =>
+            ReservationDetailsScreen(reservation: res, gateway: widget.gateway),
       ),
     );
     if (changed == true && mounted) _reload();
   }
 
   Future<void> _openAdd() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AddReservationScreen()));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddReservationScreen(gateway: widget.gateway),
+      ),
+    );
     if (mounted) _reload();
   }
 
@@ -228,7 +246,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             }
             if (snapshot.hasError) {
               return LoadErrorCard(
-                message: 'Could not load reservations.\n${snapshot.error}',
+                message:
+                    'Could not load reservations.\n'
+                    '${ConfigService.friendlyError(snapshot.error!)}',
                 onRetry: _reload,
               );
             }
@@ -374,10 +394,10 @@ class _DesktopMonthGrid extends StatelessWidget {
               spacing: 20,
               runSpacing: 8,
               children: [
-                _LegendItem(status: 'Reserved'),
-                _LegendItem(status: 'Checked In'),
-                _LegendItem(status: 'Completed'),
-                _LegendItem(status: 'Cancelled'),
+                _LegendItem(status: ReservationStatus.reserved),
+                _LegendItem(status: ReservationStatus.checkedIn),
+                _LegendItem(status: ReservationStatus.completed),
+                _LegendItem(status: ReservationStatus.cancelled),
               ],
             ),
           ),
@@ -532,7 +552,7 @@ class _BookingBar extends StatelessWidget {
       r.unitLine,
       r.stayTypeDisplayName,
       times,
-      'Status: ${r.status.isEmpty ? 'Reserved' : r.status}',
+      'Status: ${r.status.isEmpty ? ReservationStatus.reserved : r.status}',
     ].join('\n');
   }
 
@@ -977,10 +997,10 @@ class _MonthCalendar extends StatelessWidget {
               spacing: 20,
               runSpacing: 12,
               children: const [
-                _LegendItem(status: 'Reserved'),
-                _LegendItem(status: 'Checked In'),
-                _LegendItem(status: 'Completed'),
-                _LegendItem(status: 'Cancelled'),
+                _LegendItem(status: ReservationStatus.reserved),
+                _LegendItem(status: ReservationStatus.checkedIn),
+                _LegendItem(status: ReservationStatus.completed),
+                _LegendItem(status: ReservationStatus.cancelled),
               ],
             ),
           ),

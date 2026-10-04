@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'pocketbase_service.dart';
 import '../models/rate.dart';
@@ -346,6 +347,8 @@ class ConfigService {
       final message = error.response['message'];
       if (message is String && message.isNotEmpty) return message;
     }
-    return 'Something went wrong: $error';
+    // Unexpected error: keep the details in the debug console only.
+    debugPrint('Unexpected error: $error');
+    return 'Something went wrong. Please try again.';
   }
 }

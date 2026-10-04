@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../logic/reservation_stats.dart';
-import '../services/pocketbase_service.dart';
+import '../logic/reservation_workflow.dart';
 import '../models/reservation.dart';
+import '../services/config_service.dart';
+import '../services/reservation_gateway.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
@@ -29,7 +31,13 @@ import 'reservation_details_screen.dart';
 /// Both layouts use the same data: the guest-name search is sent to
 /// PocketBase, and the desktop filters, sorts and pages the result locally.
 class ReservationListScreen extends StatefulWidget {
-  const ReservationListScreen({super.key});
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
+  const ReservationListScreen({
+    super.key,
+    this.gateway = const ReservationGateway(),
+  });
 
   @override
   State<ReservationListScreen> createState() => _ReservationListScreenState();
@@ -47,10 +55,10 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
 
   static const _filterLabels = {
     ReservationStatusFilter.all: 'All',
-    ReservationStatusFilter.reserved: 'Reserved',
-    ReservationStatusFilter.checkedIn: 'Checked In',
-    ReservationStatusFilter.completed: 'Completed',
-    ReservationStatusFilter.cancelled: 'Cancelled',
+    ReservationStatusFilter.reserved: ReservationStatus.reserved,
+    ReservationStatusFilter.checkedIn: ReservationStatus.checkedIn,
+    ReservationStatusFilter.completed: ReservationStatus.completed,
+    ReservationStatusFilter.cancelled: ReservationStatus.cancelled,
   };
 
   // Table column index of each sortable field.
@@ -63,20 +71,20 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
   @override
   void initState() {
     super.initState();
-    _future = PocketBaseService.getReservations();
+    _future = widget.gateway.getReservations();
   }
 
   void _search(String value) {
     setState(() {
       _searchQuery = value;
       _page = 0;
-      _future = PocketBaseService.getReservations(searchQuery: value);
+      _future = widget.gateway.getReservations(searchQuery: value);
     });
   }
 
   void _reload() {
     setState(() {
-      _future = PocketBaseService.getReservations(searchQuery: _searchQuery);
+      _future = widget.gateway.getReservations(searchQuery: _searchQuery);
     });
   }
 
@@ -85,16 +93,19 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
   Future<void> _openDetails(Reservation res) async {
     final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (context) => ReservationDetailsScreen(reservation: res),
+        builder: (context) =>
+            ReservationDetailsScreen(reservation: res, gateway: widget.gateway),
       ),
     );
     if (changed == true && mounted) _reload();
   }
 
   Future<void> _openAdd() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AddReservationScreen()));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddReservationScreen(gateway: widget.gateway),
+      ),
+    );
     if (mounted) _reload();
   }
 
@@ -138,72 +149,80 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               child: _SearchBox(onChanged: _search),
             ),
             Expanded(
-              child: FutureBuilder<List<Reservation>>(
-                future: _future,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: EmptyStateCard(
-                          icon: Icons.cloud_off_outlined,
-                          message: 'Error loading data: ${snapshot.error}',
-                        ),
-                      ),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(AppSpacing.md),
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: EmptyStateCard(
-                          icon: Icons.search_off,
-                          message: 'No reservations found.',
-                        ),
-                      ),
-                    );
-                  }
+              // Pull down to reload (also works on the error / empty state).
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async => _reload(),
+                child: FutureBuilder<List<Reservation>>(
+                  future: _future,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        children: [
+                          LoadErrorCard(
+                            message:
+                                'Could not load reservations.\n'
+                                '${ConfigService.friendlyError(snapshot.error!)}',
+                            onRetry: _reload,
+                          ),
+                        ],
+                      );
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        children: const [
+                          EmptyStateCard(
+                            icon: Icons.search_off,
+                            message: 'No reservations found.',
+                          ),
+                        ],
+                      );
+                    }
 
-                  final reservations = snapshot.data!;
+                    final reservations = snapshot.data!;
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.md,
-                      AppSpacing.md,
-                      AppSpacing.lg,
-                    ),
-                    // Extra item at the end for the "N reservations total"
-                    // footer
-                    itemCount: reservations.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == reservations.length) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.md),
-                          child: Text(
-                            '${reservations.length} reservation${reservations.length == 1 ? '' : 's'} total',
-                            textAlign: TextAlign.center,
-                            style: AppText.caption.copyWith(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                    return ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.md,
+                        AppSpacing.md,
+                        AppSpacing.lg,
+                      ),
+                      // Extra item at the end for the "N reservations total"
+                      // footer
+                      itemCount: reservations.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == reservations.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.md),
+                            child: Text(
+                              '${reservations.length} reservation${reservations.length == 1 ? '' : 's'} total',
+                              textAlign: TextAlign.center,
+                              style: AppText.caption.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
+                          );
+                        }
+                        final res = reservations[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: ReservationListCard(
+                            reservation: res,
+                            onTap: () => _openDetails(res),
                           ),
                         );
-                      }
-                      final res = reservations[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: ReservationListCard(
-                          reservation: res,
-                          onTap: () => _openDetails(res),
-                        ),
-                      );
-                    },
-                  );
-                },
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -253,7 +272,9 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
             }
             if (snapshot.hasError) {
               return LoadErrorCard(
-                message: 'Could not load reservations.\n${snapshot.error}',
+                message:
+                    'Could not load reservations.\n'
+                    '${ConfigService.friendlyError(snapshot.error!)}',
                 onRetry: _reload,
               );
             }

@@ -7,6 +7,7 @@ import '../models/rate.dart';
 import '../models/reservation.dart';
 import '../models/stay_type.dart';
 import '../models/unit.dart';
+import '../services/config_service.dart';
 import '../services/pocketbase_service.dart';
 import '../services/reservation_gateway.dart';
 import '../theme/app_colors.dart';
@@ -161,7 +162,9 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
       if (!mounted) return;
       setState(() {
         _isLoadingConfig = false;
-        _loadError = 'Could not load units and stay types: $e';
+        _loadError =
+            'Could not load units and stay types. '
+            '${ConfigService.friendlyError(e)}';
       });
     }
   }
@@ -327,11 +330,21 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
           : first;
     }
 
+    // Check-in dates go up to a year ahead. Check-out may go beyond that
+    // (a stay can start on the last allowed day), and the range must always
+    // include the first and the currently selected date.
+    var last = today.add(const Duration(days: 365));
+    if (!isCheckIn) {
+      final checkOutLimit = first.add(const Duration(days: 30));
+      if (checkOutLimit.isAfter(last)) last = checkOutLimit;
+    }
+    if (last.isBefore(initial)) last = initial;
+
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: first,
-      lastDate: today.add(const Duration(days: 365)),
+      lastDate: last,
     );
     if (picked == null) return;
 
@@ -432,7 +445,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
         stayType: stayType,
         startAt: window.start,
         endAt: window.end,
-        status: 'Reserved',
+        status: ReservationStatus.reserved,
         notes: _notesController.text.trim(),
         rate: quote.rate,
         rateBasis: quote.basis,
@@ -473,9 +486,14 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error saving reservation: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not save the reservation. '
+            '${ConfigService.friendlyError(e)}',
+          ),
+        ),
+      );
     }
   }
 
@@ -622,7 +640,9 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      _showMessage('Error saving changes: $e');
+      _showMessage(
+        'Could not save the changes. ${ConfigService.friendlyError(e)}',
+      );
     }
   }
 
@@ -1053,7 +1073,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
                       // ── Stay details ──────────────────────────────────
                       const FormSectionHeader('Stay Details', topPadding: 20),
-                      if (stayNote != null) stayNote,
+                      ?stayNote,
                       const SizedBox(height: 12),
                       _stayTypeField(),
                       const SizedBox(height: 12),
@@ -1208,7 +1228,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
         // ── Stay details ──
         const FormSectionHeader('Stay Details', topPadding: AppSpacing.lg),
-        if (stayNote != null) stayNote,
+        ?stayNote,
         const SizedBox(height: AppSpacing.md),
         _pair(_stayTypeField(), _unitField()),
 
@@ -1466,6 +1486,10 @@ class _PriceChangeNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final oldText = oldTotal > 0 ? CurrencyFormat.peso(oldTotal) : 'no price';
+    final newText = CurrencyFormat.peso(newTotal);
+    final message = oldTotal == newTotal
+        ? 'Price stays $newText after recalculation.'
+        : 'Price will be recalculated: $oldText → $newText';
     return Container(
       key: const ValueKey('price-change-note'),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1480,8 +1504,7 @@ class _PriceChangeNote extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Price will be recalculated: $oldText → '
-              '${CurrencyFormat.peso(newTotal)}',
+              message,
               style: AppText.body.copyWith(
                 fontSize: 13,
                 color: AppColors.primary,

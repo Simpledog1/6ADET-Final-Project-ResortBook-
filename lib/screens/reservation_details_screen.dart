@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../logic/reservation_workflow.dart';
 import '../models/reservation.dart';
+import '../services/config_service.dart';
 import '../services/reservation_gateway.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -60,6 +61,9 @@ class ReservationDetailsScreen extends StatefulWidget {
 class _DetailAction {
   final Key key;
   final String label;
+
+  /// Shorter label for the side-by-side phone buttons.
+  final String shortLabel;
   final IconData icon;
 
   /// Null when the action is shown but disabled.
@@ -77,12 +81,13 @@ class _DetailAction {
   const _DetailAction({
     required this.key,
     required this.label,
+    String? shortLabel,
     required this.icon,
     required this.onPressed,
     this.primary = false,
     this.destructive = false,
     this.disabledReason,
-  });
+  }) : shortLabel = shortLabel ?? label;
 }
 
 class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
@@ -120,7 +125,12 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
       if (!mounted) return;
       setState(() => reservation = fresh);
     } catch (e) {
-      if (mounted) _showMessage('Could not reload the reservation: $e');
+      if (mounted) {
+        _showMessage(
+          'Could not reload the reservation. '
+          '${ConfigService.friendlyError(e)}',
+        );
+      }
     }
   }
 
@@ -133,7 +143,12 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
       await _refresh();
       if (mounted) _showMessage(doneMessage);
     } catch (e) {
-      if (mounted) _showMessage('Could not update the reservation: $e');
+      if (mounted) {
+        _showMessage(
+          'Could not update the reservation. '
+          '${ConfigService.friendlyError(e)}',
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -249,7 +264,8 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
       );
       problem = ReservationWorkflow.restoreError(r, candidates);
     } catch (e) {
-      problem = 'Could not check availability: $e';
+      problem =
+          'Could not check availability. ${ConfigService.friendlyError(e)}';
     }
     if (!mounted) return;
 
@@ -306,6 +322,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
     final edit = _DetailAction(
       key: const ValueKey('action-edit'),
       label: 'Edit Reservation',
+      shortLabel: 'Edit',
       icon: Icons.edit_note,
       onPressed: when(ReservationWorkflow.canEdit(r), _edit),
       primary:
@@ -345,6 +362,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
           _DetailAction(
             key: const ValueKey('action-complete'),
             label: 'Mark Completed',
+            shortLabel: 'Complete',
             icon: Icons.task_alt,
             onPressed: when(true, _complete),
             primary: true,
@@ -356,6 +374,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
           _DetailAction(
             key: const ValueKey('action-restore'),
             label: 'Restore Reservation',
+            shortLabel: 'Restore',
             icon: Icons.restore,
             onPressed: when(true, _restore),
             primary: true,
@@ -378,7 +397,17 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
   }
 
   /// A full-width button (phone) or compact button (desktop).
-  Widget _actionButton(_DetailAction action, {required bool compact}) {
+  /// [short] uses the shorter label (side-by-side phone buttons).
+  Widget _actionButton(
+    _DetailAction action, {
+    required bool compact,
+    bool short = false,
+  }) {
+    final label = Text(
+      short ? action.shortLabel : action.label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
     final Widget button;
     if (action.primary) {
       button = FilledButton.icon(
@@ -386,7 +415,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
         style: compact ? CompactButtons.filled() : null,
         onPressed: action.onPressed,
         icon: Icon(action.icon, size: 20),
-        label: Text(action.label),
+        label: label,
       );
     } else if (action.destructive) {
       button = OutlinedButton.icon(
@@ -400,7 +429,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
               ),
         onPressed: action.onPressed,
         icon: Icon(action.icon, size: 18),
-        label: Text(action.label),
+        label: label,
       );
     } else {
       button = OutlinedButton.icon(
@@ -410,7 +439,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
             : OutlinedButton.styleFrom(backgroundColor: AppColors.surface),
         onPressed: action.onPressed,
         icon: Icon(action.icon, size: 18),
-        label: Text(action.label),
+        label: label,
       );
     }
 
@@ -443,6 +472,44 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
       ? '${reservation.guestCount} '
             'Guest${reservation.guestCount == 1 ? '' : 's'}'
       : '—';
+
+  /// Phone / tablet action area: the main actions side by side, the
+  /// destructive Cancel Reservation full width underneath, then the note
+  /// explaining a disabled action.
+  List<Widget> _phoneActionArea() {
+    final actions = _actions();
+    final main = actions.where((a) => !a.destructive).toList();
+    final destructive = actions.where((a) => a.destructive).toList();
+    final note = _actionNote;
+
+    final rows = <Widget>[
+      if (main.length == 1)
+        _actionButton(main.first, compact: false)
+      else if (main.length > 1)
+        Row(
+          children: [
+            for (var i = 0; i < main.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(
+                child: _actionButton(main[i], compact: false, short: true),
+              ),
+            ],
+          ],
+        ),
+      for (final action in destructive) _actionButton(action, compact: false),
+    ];
+
+    return [
+      for (var i = 0; i < rows.length; i++) ...[
+        if (i > 0) const SizedBox(height: 10),
+        rows[i],
+      ],
+      if (note != null) ...[
+        const SizedBox(height: 8),
+        Text(note, textAlign: TextAlign.center, style: AppText.caption),
+      ],
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -638,19 +705,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final action in _actions()) ...[
-                      _actionButton(action, compact: false),
-                      const SizedBox(height: 10),
-                    ],
-                    if (_actionNote != null) ...[
-                      Text(
-                        _actionNote!,
-                        textAlign: TextAlign.center,
-                        style: AppText.caption,
-                      ),
-                    ],
-                  ],
+                  children: _phoneActionArea(),
                 ),
               ),
             ),
@@ -722,7 +777,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
                   PanelCard(
                     title: 'Reservation Timeline',
                     icon: Icons.timeline,
-                    child: _Timeline(reservation: r),
+                    child: _Timeline(reservation: r, now: _now()),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   PanelCard(
@@ -883,11 +938,37 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
   }
 }
 
-/// Booking Created → Check-in → Check-out, with past milestones filled in.
+/// Which timeline steps are done.
+///
+/// The status wins: Checked In means check-in is done (whatever the
+/// scheduled time), Completed means both are done, Cancelled means neither.
+/// Reserved bookings fall back to the scheduled times, as before.
+@visibleForTesting
+({bool checkIn, bool checkOut}) timelineProgress(
+  Reservation reservation,
+  DateTime now,
+) {
+  switch (ReservationStatus.normalize(reservation.status)) {
+    case ReservationStatus.completed:
+      return (checkIn: true, checkOut: true);
+    case ReservationStatus.checkedIn:
+      return (checkIn: true, checkOut: false);
+    case ReservationStatus.cancelled:
+      return (checkIn: false, checkOut: false);
+    default:
+      return (
+        checkIn: !reservation.startAt.isAfter(now),
+        checkOut: !reservation.endAt.isAfter(now),
+      );
+  }
+}
+
+/// Booking Created → Check-in → Check-out, with finished steps filled in.
 class _Timeline extends StatelessWidget {
   final Reservation reservation;
+  final DateTime now;
 
-  const _Timeline({required this.reservation});
+  const _Timeline({required this.reservation, required this.now});
 
   String _when(DateTime d) => reservation.isLegacy
       ? DateFormatUtil.long(d)
@@ -896,8 +977,8 @@ class _Timeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = reservation;
-    final now = DateTime.now();
     final created = r.createdAt;
+    final progress = timelineProgress(r, now);
 
     final items = <_TimelineItem>[
       _TimelineItem(
@@ -912,14 +993,14 @@ class _Timeline extends StatelessWidget {
         icon: Icons.login,
         title: 'Check-in',
         subtitle: _when(r.startAt),
-        done: !r.isCancelled && !r.startAt.isAfter(now),
+        done: progress.checkIn,
         muted: r.isCancelled,
       ),
       _TimelineItem(
         icon: Icons.logout,
         title: 'Check-out',
         subtitle: _when(r.endAt),
-        done: !r.isCancelled && !r.endAt.isAfter(now),
+        done: progress.checkOut,
         muted: r.isCancelled,
       ),
     ];

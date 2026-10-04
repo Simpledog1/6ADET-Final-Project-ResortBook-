@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
-import 'responsive.dart';
 
 /// Navy header from the Figma wireframe.
 ///
@@ -12,9 +11,7 @@ import 'responsive.dart';
 ///
 /// The navy colour extends behind the system status bar, like the design.
 ///
-/// Inside the desktop app shell (sidebar layout) the shell already shows the
-/// navy top bar, so the header becomes a Figma-style page title row instead,
-/// with a back arrow only when there is a page to go back to.
+/// Used on phones and tablets; desktop pages use `DesktopPage` instead.
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool isHome;
@@ -33,9 +30,6 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (DesktopShellScope.isInside(context)) {
-      return _buildDesktopTitle(context);
-    }
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Material(
@@ -98,44 +92,6 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ],
-    );
-  }
-
-  /// Desktop page title row (used inside the sidebar shell).
-  Widget _buildDesktopTitle(BuildContext context) {
-    final canGoBack = Navigator.of(context).canPop();
-    return Container(
-      height: AppSpacing.headerHeight,
-      color: AppColors.background,
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, 8, AppSpacing.md, 0),
-      child: Row(
-        children: [
-          if (canGoBack) ...[
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                tooltip: 'Back',
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppColors.textPrimary,
-                  size: 22,
-                ),
-                onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            child: Text(
-              isHome ? 'Dashboard' : title,
-              style: AppText.cardTitle.copyWith(fontSize: 24, height: 1.3),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

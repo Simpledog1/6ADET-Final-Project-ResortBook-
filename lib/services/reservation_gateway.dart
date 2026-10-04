@@ -2,10 +2,12 @@ import '../models/rate.dart';
 import '../models/reservation.dart';
 import '../models/stay_type.dart';
 import '../models/unit.dart';
+import '../models/unit_type.dart';
 import 'config_service.dart';
 import 'pocketbase_service.dart';
 
-/// The PocketBase calls used by Reservation Details and Edit Reservation.
+/// The PocketBase calls used by the reservation screens (Dashboard,
+/// Reservation List, Calendar, Details and Add / Edit Reservation).
 ///
 /// It only forwards to the existing [PocketBaseService] / [ConfigService]
 /// methods. Screens take one as an optional parameter so widget tests can
@@ -13,6 +15,10 @@ import 'pocketbase_service.dart';
 /// app itself always uses this default.
 class ReservationGateway {
   const ReservationGateway();
+
+  /// All reservations, newest stay first ([searchQuery] filters by guest).
+  Future<List<Reservation>> getReservations({String searchQuery = ''}) =>
+      PocketBaseService.getReservations(searchQuery: searchQuery);
 
   Future<Reservation> getReservation(String id) =>
       PocketBaseService.getReservation(id);
@@ -36,6 +42,9 @@ class ReservationGateway {
     end: end,
     excludeReservationId: excludeReservationId,
   );
+
+  Future<List<UnitType>> getUnitTypes({bool activeOnly = false}) =>
+      ConfigService.getUnitTypes(activeOnly: activeOnly);
 
   Future<List<StayType>> getStayTypes({bool activeOnly = false}) =>
       ConfigService.getStayTypes(activeOnly: activeOnly);

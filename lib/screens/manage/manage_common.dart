@@ -68,7 +68,6 @@ class ManagePage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (usesDesktopLayout(context)) return _buildDesktop(context);
 
-    final maxWidth = Breakpoints.isDesktop(context) ? 1200.0 : 720.0;
     return Scaffold(
       appBar: AppHeader(title: title),
       body: RefreshIndicator(
@@ -78,7 +77,6 @@ class ManagePage extends StatelessWidget {
           padding: const EdgeInsets.only(top: 12, bottom: AppSpacing.lg * 2),
           children: [
             ResponsiveContent(
-              maxWidth: maxWidth,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Column(
