@@ -20,7 +20,7 @@ Setup, features and limitations are in the [project README](../README.md). This 
 
 ## Booking rules in short
 
-- A booking's start and end come from its stay type (e.g. Overnight 2:00 PM → 12:00 PM next day). Times are stored in UTC.
+- A booking starts at the stay type's default check-in time (or a time staff pick) and ends after the stay type's duration, which the owner sets in Manage Resort (e.g. Day Tour 8 hours: 8:00 AM → 4:00 PM). Each extra night of a multi-night stay adds a day. The duration is stored as the stay type's check-out time, so no extra database field is needed. Times are stored in UTC, and saved bookings keep their times when a duration changes later.
 - Two bookings on the same unit overlap when `newStart < existingEnd && newEnd > existingStart`, so back-to-back bookings are allowed. Cancelled bookings never block.
 - Prices are per night or per stay, from the rate for the unit's type and the stay type. The rate, total and names are saved with each booking.
 - Statuses: `Reserved` → `Checked In` (from the check-in date) → `Completed`; `Reserved` can be cancelled; a cancelled booking can be restored if its unit is still free. Editing a checked-in booking is limited to guest details and notes; completed and cancelled bookings can't be edited.

@@ -245,6 +245,63 @@ void main() {
     expect(find.widgetWithText(TextFormField, 'Maria Santos'), findsOneWidget);
   });
 
+  group('owner changed the stay duration after booking', () {
+    // Overnight was 22 hours (2:00 PM → 12:00 PM) when this was booked;
+    // the owner has since changed it to 20 hours (2:00 PM → 10:00 AM).
+    const overnight20h = StayType(
+      id: 'st_overnight',
+      name: 'Overnight',
+      checkInTime: '14:00',
+      checkOutTime: '10:00',
+      endsNextDay: true,
+      allowMultipleNights: true,
+      pricingBasis: PricingBasis.perNight,
+    );
+
+    testWidgets('a guest-only edit keeps the saved start and end', (
+      tester,
+    ) async {
+      final fake = FakeGateway(current: booking(), stayTypes: [overnight20h]);
+      await pumpEdit(tester, fake);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, '0917 000 0000'),
+        '0918 111 2222',
+      );
+      await tapSave(tester);
+
+      expect(fake.calls, ['update']);
+      expect(fake.updates.single, {'phone': '0918 111 2222'});
+    });
+
+    testWidgets('rescheduling uses its own start time and the new duration', (
+      tester,
+    ) async {
+      final fake = FakeGateway(current: booking(), stayTypes: [overnight20h]);
+      await pumpEdit(tester, fake);
+
+      // Pick the check-in date again (same date, 2 nights).
+      final date = find.text('November 10, 2026');
+      await tester.ensureVisible(date);
+      await tester.tap(date);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tapSave(tester);
+
+      expect(fake.calls, ['overlap', 'update']);
+      final body = fake.updates.single;
+      expect(
+        body['startAt'],
+        DateTime(2026, 11, 10, 14).toUtc().toIso8601String(),
+      );
+      expect(
+        body['endAt'],
+        DateTime(2026, 11, 12, 10).toUtc().toIso8601String(),
+      );
+    });
+  });
+
   group('timelineProgress', () {
     final now = DateTime(2026, 11, 11, 9); // Nov 11, 9:00 AM
 

@@ -71,6 +71,20 @@ class StayType {
   /// Hour/minute of check-out, parsed from [checkOutTime] (defaults to 00:00).
   ({int hour, int minute}) get checkOut => _parseTime(checkOutTime);
 
+  /// How long one stay lasts, in minutes, as configured by the resort:
+  /// from the check-in time to the check-out time (on the next day when
+  /// [endsNextDay] is on). For multi-night stay types this is the length of
+  /// the first night; every extra night adds one day.
+  ///
+  /// Null when the times can't make a stay (check-out not after check-in).
+  int? get durationMinutes {
+    final minutes =
+        (checkOut.hour * 60 + checkOut.minute) -
+        (checkIn.hour * 60 + checkIn.minute) +
+        (endsNextDay ? 24 * 60 : 0);
+    return minutes > 0 ? minutes : null;
+  }
+
   static ({int hour, int minute}) _parseTime(String value) {
     final parts = value.split(':');
     if (parts.length != 2) return (hour: 0, minute: 0);

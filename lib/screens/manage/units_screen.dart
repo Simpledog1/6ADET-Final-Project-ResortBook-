@@ -3,6 +3,7 @@ import '../../logic/config_rules.dart';
 import '../../models/unit.dart';
 import '../../models/unit_type.dart';
 import '../../services/config_service.dart';
+import '../../services/reservation_gateway.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
@@ -21,7 +22,10 @@ enum _StatusFilter { all, active, inactive }
 
 /// Manage Resort → Units (Cottage 1, Villa A, Function Hall, …).
 class UnitsScreen extends StatefulWidget {
-  const UnitsScreen({super.key});
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
+  const UnitsScreen({super.key, this.gateway = const ReservationGateway()});
 
   @override
   State<UnitsScreen> createState() => _UnitsScreenState();
@@ -50,9 +54,9 @@ class _UnitsScreenState extends State<UnitsScreen> {
       _error = null;
     });
     try {
-      final units = await ConfigService.getUnits();
-      final types = await ConfigService.getUnitTypes();
-      final usage = await ConfigService.getReservationUsage();
+      final units = await widget.gateway.getUnits();
+      final types = await widget.gateway.getUnitTypes();
+      final usage = await widget.gateway.getReservationUsage();
       if (!mounted) return;
       setState(() {
         _units = units;
@@ -101,6 +105,7 @@ class _UnitsScreenState extends State<UnitsScreen> {
       builder: (_) => UnitForm(
         existing: unit,
         unitTypes: _types,
+        gateway: widget.gateway,
         maxUpcomingGuests: unit == null
             ? 0
             : (_usage?.unitMaxUpcomingGuests(unit.id) ?? 0),
@@ -116,9 +121,11 @@ class _UnitsScreenState extends State<UnitsScreen> {
   }
 
   Future<void> _openUnitTypes() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const UnitTypesScreen()));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UnitTypesScreen(gateway: widget.gateway),
+      ),
+    );
     if (mounted) _load();
   }
 
@@ -137,7 +144,7 @@ class _UnitsScreenState extends State<UnitsScreen> {
     );
     if (!confirmed) return;
     try {
-      await ConfigService.setUnitActive(unit.id, false);
+      await widget.gateway.setUnitActive(unit.id, false);
       if (!mounted) return;
       showManageMessage(context, '${unit.name} deactivated.');
       _load();
@@ -148,7 +155,7 @@ class _UnitsScreenState extends State<UnitsScreen> {
 
   Future<void> _activate(Unit unit) async {
     try {
-      await ConfigService.setUnitActive(unit.id, true);
+      await widget.gateway.setUnitActive(unit.id, true);
       if (!mounted) return;
       showManageMessage(context, '${unit.name} activated.');
       _load();
@@ -167,7 +174,7 @@ class _UnitsScreenState extends State<UnitsScreen> {
     );
     if (!confirmed) return;
     try {
-      await ConfigService.deleteUnit(unit.id); // re-checks reservations first
+      await widget.gateway.deleteUnit(unit.id); // re-checks reservations first
       if (!mounted) return;
       showManageMessage(context, '${unit.name} deleted.');
       _load();
@@ -202,9 +209,7 @@ class _UnitsScreenState extends State<UnitsScreen> {
         onPressed: ConfigRules.canDeleteUnit(reservations)
             ? () => _delete(unit)
             : null,
-        disabledReason:
-            'Has $reservations reservation'
-            '${reservations == 1 ? '' : 's'} — deactivate instead',
+        disabledReason: ConfigRules.unitInUseMessage(reservations),
       ),
     ];
   }

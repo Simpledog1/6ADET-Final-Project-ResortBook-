@@ -103,6 +103,16 @@ class DateFormatUtil {
     return _formatTime(h, m);
   }
 
+  /// Stay length: 480 → "8 hours", 60 → "1 hour", 510 → "8 hours 30 min",
+  /// 45 → "45 min".
+  static String duration(int minutes) {
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    final hours = h == 0 ? '' : '$h hour${h == 1 ? '' : 's'}';
+    if (m == 0) return hours.isEmpty ? '0 min' : hours;
+    return hours.isEmpty ? '$m min' : '$hours $m min';
+  }
+
   /// "Jun 15, 2025 · 2:00 PM"
   static String shortWithTime(DateTime d) => '${short(d)} · ${time(d)}';
 

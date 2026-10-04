@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../logic/config_rules.dart';
 import '../../models/unit_type.dart';
 import '../../services/config_service.dart';
+import '../../services/reservation_gateway.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_inputs.dart';
 import 'manage_common.dart';
@@ -15,7 +16,15 @@ class UnitTypeForm extends StatefulWidget {
   /// Names of the OTHER unit types (for the duplicate-name check).
   final List<String> otherNames;
 
-  const UnitTypeForm({super.key, this.existing, required this.otherNames});
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
+  const UnitTypeForm({
+    super.key,
+    this.existing,
+    required this.otherNames,
+    this.gateway = const ReservationGateway(),
+  });
 
   @override
   State<UnitTypeForm> createState() => _UnitTypeFormState();
@@ -75,9 +84,9 @@ class _UnitTypeFormState extends State<UnitTypeForm> {
 
     try {
       if (widget.existing == null) {
-        await ConfigService.createUnitType(type);
+        await widget.gateway.createUnitType(type);
       } else {
-        await ConfigService.updateUnitType(type);
+        await widget.gateway.updateUnitType(type);
       }
       if (!mounted) return;
       Navigator.of(context).pop(true);

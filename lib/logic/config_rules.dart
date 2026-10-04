@@ -116,16 +116,81 @@ class ConfigRules {
     if (!isValidTime(checkOutTime)) return 'Choose a check-out time.';
 
     if (!endsNextDay && minutesOf(checkOutTime) <= minutesOf(checkInTime)) {
-      return 'For a same-day stay, check-out must be after check-in. '
-          'Turn on "Ends next day" if guests leave the following day.';
+      return 'For a same-day stay, check-out must be after check-in.';
     }
     if (allowMultipleNights && !endsNextDay) {
-      return 'Multiple nights requires "Ends next day".';
+      return 'Multiple nights needs a stay that ends on the next day '
+          '(make the duration longer).';
     }
     if (pricingBasis == PricingBasis.perNight && !endsNextDay) {
-      return 'Per-night pricing requires "Ends next day".';
+      return 'Per-night pricing needs a stay that ends on the next day '
+          '(make the duration longer, or price it per stay).';
     }
     return null;
+  }
+
+  // ── Stay type duration ─────────────────────────────────────────────────
+
+  static const int _minutesPerDay = 24 * 60;
+
+  /// The longest stay: it must end by 11:59 PM on the day after check-in
+  /// (longer stays use "Allow multiple nights").
+  static int maxDurationMinutes(String checkInTime) =>
+      2 * _minutesPerDay - 1 - minutesOf(checkInTime);
+
+  /// Duration in minutes from a check-in time, a check-out time and
+  /// whether check-out is on the next day (same rule as
+  /// `StayType.durationMinutes`). Null when the times can't make a stay.
+  static int? durationFromTimes({
+    required String checkInTime,
+    required String checkOutTime,
+    required bool endsNextDay,
+  }) {
+    if (!isValidTime(checkInTime) || !isValidTime(checkOutTime)) return null;
+    final minutes =
+        minutesOf(checkOutTime) -
+        minutesOf(checkInTime) +
+        (endsNextDay ? _minutesPerDay : 0);
+    return minutes > 0 ? minutes : null;
+  }
+
+  /// Problem with a stay type's default check-in time and duration, or null.
+  static String? validateStayDuration({
+    required String checkInTime,
+    required int? durationMinutes,
+  }) {
+    if (!isValidTime(checkInTime)) return 'Choose a default check-in time.';
+    if (durationMinutes == null || durationMinutes < 1) {
+      return 'Enter how long the stay lasts.';
+    }
+    if (durationMinutes > maxDurationMinutes(checkInTime)) {
+      return 'A stay must end by the next day. For longer stays, turn on '
+          '"Allow multiple nights".';
+    }
+    return null;
+  }
+
+  /// The check-out time and "ends next day" flag stored for a stay that
+  /// starts at [checkInTime] and lasts [durationMinutes]. Null when
+  /// [validateStayDuration] reports a problem.
+  ///
+  /// E.g. 08:00 + 8 h → 16:00 the same day; 14:00 + 22 h → 12:00 next day.
+  static ({String checkOutTime, bool endsNextDay})? checkOutFor({
+    required String checkInTime,
+    required int durationMinutes,
+  }) {
+    if (validateStayDuration(
+          checkInTime: checkInTime,
+          durationMinutes: durationMinutes,
+        ) !=
+        null) {
+      return null;
+    }
+    final end = minutesOf(checkInTime) + durationMinutes;
+    final clock = end % _minutesPerDay;
+    final hh = (clock ~/ 60).toString().padLeft(2, '0');
+    final mm = (clock % 60).toString().padLeft(2, '0');
+    return (checkOutTime: '$hh:$mm', endsNextDay: end >= _minutesPerDay);
   }
 
   // ── Deletion safety ────────────────────────────────────────────────────
@@ -137,6 +202,19 @@ class ConfigRules {
   /// A unit can be deleted only when no reservation references it —
   /// including cancelled, past and test reservations.
   static bool canDeleteUnit(int reservationCount) => reservationCount == 0;
+
+  /// Why a unit type that is still used by [unitCount] units can't be
+  /// deleted (shown in the app and returned by the delete check).
+  static String unitTypeInUseMessage(int unitCount) =>
+      'Used by $unitCount unit${unitCount == 1 ? '' : 's'}. A unit type must '
+      'have no units before it can be deleted: move its units to another '
+      'type or delete them first, or deactivate this type instead.';
+
+  /// Why a unit with [reservationCount] reservations can't be deleted.
+  static String unitInUseMessage(int reservationCount) =>
+      'Has $reservationCount reservation${reservationCount == 1 ? '' : 's'}, '
+      'so it can’t be deleted: its reservation history must be kept. '
+      'Deactivate it instead.';
 
   /// A stay type can be deleted only when no reservation references it.
   static bool canDeleteStayType(int reservationCount) => reservationCount == 0;

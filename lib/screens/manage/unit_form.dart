@@ -4,6 +4,7 @@ import '../../logic/config_rules.dart';
 import '../../models/unit.dart';
 import '../../models/unit_type.dart';
 import '../../services/config_service.dart';
+import '../../services/reservation_gateway.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
@@ -24,11 +25,15 @@ class UnitForm extends StatefulWidget {
   /// Largest guest count among this unit's upcoming reservations (0 if none).
   final int maxUpcomingGuests;
 
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
   const UnitForm({
     super.key,
     this.existing,
     required this.unitTypes,
     this.maxUpcomingGuests = 0,
+    this.gateway = const ReservationGateway(),
   });
 
   @override
@@ -104,7 +109,7 @@ class _UnitFormState extends State<UnitForm> {
     try {
       // Unit names aren't unique in the database, so re-check against the
       // latest list right before saving.
-      final latest = await ConfigService.getUnits();
+      final latest = await widget.gateway.getUnits();
       final otherNames = latest
           .where((u) => u.id != widget.existing?.id)
           .map((u) => u.name);
@@ -132,9 +137,9 @@ class _UnitFormState extends State<UnitForm> {
       );
 
       if (widget.existing == null) {
-        await ConfigService.createUnit(unit);
+        await widget.gateway.createUnit(unit);
       } else {
-        await ConfigService.updateUnit(unit);
+        await widget.gateway.updateUnit(unit);
       }
       if (!mounted) return;
       Navigator.of(context).pop(true);

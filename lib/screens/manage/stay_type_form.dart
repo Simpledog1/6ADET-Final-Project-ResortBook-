@@ -10,11 +10,18 @@ import '../../utils/date_format.dart';
 import '../../widgets/app_inputs.dart';
 import 'manage_common.dart';
 
-/// Readable times for a stay type, e.g. "2:00 PM → 12:00 PM next day".
+/// Readable times for a stay type, e.g.
+/// "2:00 PM → 12:00 PM next day · 22 hours".
 String stayTimesLabel(String checkIn, String checkOut, bool endsNextDay) {
+  final minutes = ConfigRules.durationFromTimes(
+    checkInTime: checkIn,
+    checkOutTime: checkOut,
+    endsNextDay: endsNextDay,
+  );
   return '${DateFormatUtil.timeOfDay(checkIn)} → '
       '${DateFormatUtil.timeOfDay(checkOut)}'
-      '${endsNextDay ? ' next day' : ''}';
+      '${endsNextDay ? ' next day' : ''}'
+      '${minutes == null ? '' : ' · ${DateFormatUtil.duration(minutes)}'}';
 }
 
 /// Create / edit form for a stay type. Pops `true` after a successful save.
@@ -48,9 +55,9 @@ class _StayTypeFormState extends State<StayTypeForm> {
   late final TextEditingController _name;
   late final TextEditingController _description;
   late final TextEditingController _sortOrder;
+  late final TextEditingController _durationHours;
+  late final TextEditingController _durationMinutes;
   late String _checkInTime; // "HH:mm" or '' when not chosen yet
-  late String _checkOutTime;
-  late bool _endsNextDay;
   late bool _allowMultipleNights;
   late PricingBasis _pricingBasis;
   late bool _isActive;
@@ -68,8 +75,15 @@ class _StayTypeFormState extends State<StayTypeForm> {
       text: st != null && st.sortOrder != 0 ? '${st.sortOrder}' : '',
     );
     _checkInTime = st?.checkInTime ?? '';
-    _checkOutTime = st?.checkOutTime ?? '';
-    _endsNextDay = st?.endsNextDay ?? false;
+    // The duration is shown and edited; the check-out time and "ends next
+    // day" flag stored in PocketBase are calculated from it on save.
+    final duration = st?.durationMinutes;
+    _durationHours = TextEditingController(
+      text: duration == null ? '' : '${duration ~/ 60}',
+    );
+    _durationMinutes = TextEditingController(
+      text: duration == null || duration % 60 == 0 ? '' : '${duration % 60}',
+    );
     _allowMultipleNights = st?.allowMultipleNights ?? false;
     _pricingBasis = st?.pricingBasis ?? PricingBasis.perStay;
     _isActive = st?.isActive ?? true;
@@ -80,16 +94,15 @@ class _StayTypeFormState extends State<StayTypeForm> {
     _name.dispose();
     _description.dispose();
     _sortOrder.dispose();
+    _durationHours.dispose();
+    _durationMinutes.dispose();
     super.dispose();
   }
 
-  Future<void> _pickTime(bool isCheckIn) async {
-    final current = isCheckIn ? _checkInTime : _checkOutTime;
-    var initial = isCheckIn
-        ? const TimeOfDay(hour: 14, minute: 0)
-        : const TimeOfDay(hour: 12, minute: 0);
-    if (ConfigRules.isValidTime(current)) {
-      final minutes = ConfigRules.minutesOf(current);
+  Future<void> _pickCheckInTime() async {
+    var initial = const TimeOfDay(hour: 14, minute: 0);
+    if (ConfigRules.isValidTime(_checkInTime)) {
+      final minutes = ConfigRules.minutesOf(_checkInTime);
       initial = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
     }
 
@@ -100,22 +113,57 @@ class _StayTypeFormState extends State<StayTypeForm> {
         '${picked.hour.toString().padLeft(2, '0')}:'
         '${picked.minute.toString().padLeft(2, '0')}';
     setState(() {
-      if (isCheckIn) {
-        _checkInTime = value;
-      } else {
-        _checkOutTime = value;
-      }
-      _error = null;
+      _checkInTime = value;
+      _durationChanged();
     });
   }
 
-  String? get _timesProblem => ConfigRules.validateStayTimes(
-    checkInTime: _checkInTime,
-    checkOutTime: _checkOutTime,
-    endsNextDay: _endsNextDay,
-    allowMultipleNights: _allowMultipleNights,
-    pricingBasis: _pricingBasis,
-  );
+  /// Total minutes typed into the duration fields, or null when both are
+  /// empty.
+  int? get _duration {
+    final h = _durationHours.text.trim();
+    final m = _durationMinutes.text.trim();
+    if (h.isEmpty && m.isEmpty) return null;
+    return (int.tryParse(h) ?? 0) * 60 + (int.tryParse(m) ?? 0);
+  }
+
+  /// Check-out time and "ends next day" calculated from the check-in time
+  /// and the duration, or null while they are incomplete or invalid.
+  ({String checkOutTime, bool endsNextDay})? get _checkOut {
+    final duration = _duration;
+    if (duration == null || !ConfigRules.isValidTime(_checkInTime)) {
+      return null;
+    }
+    return ConfigRules.checkOutFor(
+      checkInTime: _checkInTime,
+      durationMinutes: duration,
+    );
+  }
+
+  bool get _endsNextDay => _checkOut?.endsNextDay ?? false;
+
+  /// Called (inside setState) after the check-in time or duration changes.
+  void _durationChanged() {
+    // Multiple nights only makes sense for stays that end the next day.
+    if (_checkOut != null && !_endsNextDay) _allowMultipleNights = false;
+    _error = null;
+  }
+
+  String? get _timesProblem {
+    final durationProblem = ConfigRules.validateStayDuration(
+      checkInTime: _checkInTime,
+      durationMinutes: _duration,
+    );
+    if (durationProblem != null) return durationProblem;
+    final checkOut = _checkOut!;
+    return ConfigRules.validateStayTimes(
+      checkInTime: _checkInTime,
+      checkOutTime: checkOut.checkOutTime,
+      endsNextDay: checkOut.endsNextDay,
+      allowMultipleNights: _allowMultipleNights,
+      pricingBasis: _pricingBasis,
+    );
+  }
 
   Future<void> _save() async {
     final formOk = _formKey.currentState!.validate();
@@ -130,13 +178,14 @@ class _StayTypeFormState extends State<StayTypeForm> {
       _error = null;
     });
 
+    final checkOut = _checkOut!;
     final stayType = StayType(
       id: widget.existing?.id ?? '',
       name: ConfigRules.normalizeName(_name.text),
       description: _description.text.trim(),
       checkInTime: _checkInTime,
-      checkOutTime: _checkOutTime,
-      endsNextDay: _endsNextDay,
+      checkOutTime: checkOut.checkOutTime,
+      endsNextDay: checkOut.endsNextDay,
       allowMultipleNights: _allowMultipleNights,
       pricingBasis: _pricingBasis,
       isActive: _isActive,
@@ -162,9 +211,7 @@ class _StayTypeFormState extends State<StayTypeForm> {
 
   @override
   Widget build(BuildContext context) {
-    final timesChosen =
-        ConfigRules.isValidTime(_checkInTime) &&
-        ConfigRules.isValidTime(_checkOutTime);
+    final checkOut = _checkOut;
     final deactivatingLast =
         widget.existing != null && widget.isLastActive && !_isActive;
 
@@ -211,56 +258,78 @@ class _StayTypeFormState extends State<StayTypeForm> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: FieldLabel(
-                  text: 'Check-in time',
-                  child: PickerField(
-                    value: ConfigRules.isValidTime(_checkInTime)
-                        ? DateFormatUtil.timeOfDay(_checkInTime)
-                        : null,
-                    placeholder: 'Select',
-                    trailingIcon: Icons.access_time,
-                    onTap: () => _pickTime(true),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FieldLabel(
-                  text: 'Check-out time',
-                  child: PickerField(
-                    value: ConfigRules.isValidTime(_checkOutTime)
-                        ? DateFormatUtil.timeOfDay(_checkOutTime)
-                        : null,
-                    placeholder: 'Select',
-                    trailingIcon: Icons.access_time,
-                    onTap: () => _pickTime(false),
-                  ),
-                ),
-              ),
-            ],
+          FieldLabel(
+            text: 'Default check-in time',
+            child: PickerField(
+              value: ConfigRules.isValidTime(_checkInTime)
+                  ? DateFormatUtil.timeOfDay(_checkInTime)
+                  : null,
+              placeholder: 'Select',
+              trailingIcon: Icons.access_time,
+              onTap: _pickCheckInTime,
+            ),
           ),
           const SizedBox(height: 12),
-          ManageSwitchRow(
-            label: 'Ends next day',
-            description: 'Check-out happens on the day after check-in.',
-            value: _endsNextDay,
-            onChanged: _saving
-                ? null
-                : (v) => setState(() {
-                    _endsNextDay = v;
-                    if (!v) _allowMultipleNights = false;
-                    _error = null;
-                  }),
+          FieldLabel(
+            text: 'Duration',
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    key: const ValueKey('duration-hours'),
+                    controller: _durationHours,
+                    style: AppText.body,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: AppInputs.decoration(
+                      hint: 'e.g. 8',
+                      icon: Icons.timelapse,
+                    ).copyWith(suffixText: 'hours'),
+                    onChanged: (_) => setState(_durationChanged),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    key: const ValueKey('duration-minutes'),
+                    controller: _durationMinutes,
+                    style: AppText.body,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(2),
+                    ],
+                    decoration: AppInputs.decoration(
+                      hint: '0',
+                    ).copyWith(suffixText: 'min'),
+                    validator: (v) => (int.tryParse(v ?? '') ?? 0) > 59
+                        ? 'Use 0–59 minutes.'
+                        : null,
+                    onChanged: (_) => setState(_durationChanged),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            checkOut == null
+                ? 'Check-out is calculated from the check-in time and the '
+                      'duration.'
+                : 'Check-out: '
+                      '${DateFormatUtil.timeOfDay(checkOut.checkOutTime)}'
+                      '${checkOut.endsNextDay ? ' the next day' : ' the same day'}'
+                      '. New reservations use this duration; staff can '
+                      'still pick another start time.',
+            style: AppText.caption,
           ),
           const SizedBox(height: 8),
           ManageSwitchRow(
             label: 'Allow multiple nights',
             description: _endsNextDay
                 ? 'Guests choose a check-out date (e.g. Overnight).'
-                : 'Available when "Ends next day" is on.',
+                : 'Available when the stay ends on the next day.',
             value: _allowMultipleNights,
             onChanged: (_saving || !_endsNextDay)
                 ? null
@@ -300,7 +369,7 @@ class _StayTypeFormState extends State<StayTypeForm> {
               ],
             ),
           ),
-          if (timesChosen) ...[
+          if (checkOut != null) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -310,7 +379,7 @@ class _StayTypeFormState extends State<StayTypeForm> {
                 border: Border.all(color: AppColors.primaryTintBorder),
               ),
               child: Text(
-                '${stayTimesLabel(_checkInTime, _checkOutTime, _endsNextDay)}'
+                '${stayTimesLabel(_checkInTime, checkOut.checkOutTime, checkOut.endsNextDay)}'
                 ' · ${_pricingBasis == PricingBasis.perNight ? 'priced per night' : 'priced per stay'}'
                 '${_allowMultipleNights ? ' · multiple nights' : ''}',
                 style: AppText.valueStrong.copyWith(color: AppColors.primary),

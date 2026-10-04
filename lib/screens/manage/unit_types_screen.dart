@@ -3,6 +3,7 @@ import '../../logic/config_rules.dart';
 import '../../models/unit.dart';
 import '../../models/unit_type.dart';
 import '../../services/config_service.dart';
+import '../../services/reservation_gateway.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/active_badge.dart';
@@ -16,7 +17,10 @@ import 'unit_type_form.dart';
 
 /// Manage Resort → Unit Types (Room, Cottage, Villa, …).
 class UnitTypesScreen extends StatefulWidget {
-  const UnitTypesScreen({super.key});
+  /// PocketBase access; tests pass a fake.
+  final ReservationGateway gateway;
+
+  const UnitTypesScreen({super.key, this.gateway = const ReservationGateway()});
 
   @override
   State<UnitTypesScreen> createState() => _UnitTypesScreenState();
@@ -40,8 +44,8 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
       _error = null;
     });
     try {
-      final types = await ConfigService.getUnitTypes();
-      final units = await ConfigService.getUnits();
+      final types = await widget.gateway.getUnitTypes();
+      final units = await widget.gateway.getUnits();
       if (!mounted) return;
       setState(() {
         _types = types;
@@ -73,7 +77,11 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
     final saved = await showAdaptiveForm<bool>(
       context,
       title: type == null ? 'Add Unit Type' : 'Edit Unit Type',
-      builder: (_) => UnitTypeForm(existing: type, otherNames: otherNames),
+      builder: (_) => UnitTypeForm(
+        existing: type,
+        otherNames: otherNames,
+        gateway: widget.gateway,
+      ),
     );
     if (saved == true && mounted) {
       showManageMessage(
@@ -128,7 +136,7 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
         units: _units,
         alsoDeactivateUnits: alsoDeactivateUnits,
       );
-      await ConfigService.deactivateUnitType(
+      await widget.gateway.deactivateUnitType(
         type.id,
         alsoDeactivateUnitIds: unitsToDeactivate.map((u) => u.id).toList(),
       );
@@ -148,7 +156,7 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
 
   Future<void> _activate(UnitType type) async {
     try {
-      await ConfigService.setUnitTypeActive(type.id, true);
+      await widget.gateway.setUnitTypeActive(type.id, true);
       if (!mounted) return;
       final inactiveUnits = _units
           .where((u) => u.unitTypeId == type.id && !u.isActive)
@@ -180,7 +188,7 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
     );
     if (!confirmed) return;
     try {
-      await ConfigService.deleteUnitType(type.id); // re-checks usage first
+      await widget.gateway.deleteUnitType(type.id); // re-checks usage first
       if (!mounted) return;
       showManageMessage(context, '${type.name} deleted.');
       _load();
@@ -215,8 +223,7 @@ class _UnitTypesScreenState extends State<UnitTypesScreen> {
         onPressed: ConfigRules.canDeleteUnitType(unitCount)
             ? () => _delete(type)
             : null,
-        disabledReason:
-            'Used by $unitCount unit${unitCount == 1 ? '' : 's'} — deactivate instead',
+        disabledReason: ConfigRules.unitTypeInUseMessage(unitCount),
       ),
     ];
   }

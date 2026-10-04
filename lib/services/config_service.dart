@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'pocketbase_service.dart';
+import '../logic/config_rules.dart';
 import '../models/rate.dart';
 import '../models/stay_type.dart';
 import '../models/unit.dart';
@@ -284,11 +285,8 @@ class ConfigService {
   /// name/price snapshots, so they are unaffected.
   static Future<void> deleteUnitType(String unitTypeId) async {
     final units = await countUnitsOfType(unitTypeId);
-    if (units > 0) {
-      throw ConfigInUseException(
-        'This unit type is used by $units unit${units == 1 ? '' : 's'} and '
-        'cannot be deleted. Deactivate it instead.',
-      );
+    if (!ConfigRules.canDeleteUnitType(units)) {
+      throw ConfigInUseException(ConfigRules.unitTypeInUseMessage(units));
     }
     await _deleteRatesWhere(_pb.filter('unitType = {:id}', {'id': unitTypeId}));
     await _pb.collection('unit_types').delete(unitTypeId);
@@ -297,12 +295,8 @@ class ConfigService {
   /// Deletes a unit only if NO reservation references it (any status).
   static Future<void> deleteUnit(String unitId) async {
     final reservations = await countReservationsForUnit(unitId);
-    if (reservations > 0) {
-      throw ConfigInUseException(
-        'This unit has $reservations reservation'
-        '${reservations == 1 ? '' : 's'} and cannot be deleted. '
-        'Deactivate it instead.',
-      );
+    if (!ConfigRules.canDeleteUnit(reservations)) {
+      throw ConfigInUseException(ConfigRules.unitInUseMessage(reservations));
     }
     await _pb.collection('units').delete(unitId);
   }

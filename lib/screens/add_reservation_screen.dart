@@ -7,20 +7,22 @@ import '../models/rate.dart';
 import '../models/reservation.dart';
 import '../models/stay_type.dart';
 import '../models/unit.dart';
+import '../models/unit_type.dart';
 import '../services/config_service.dart';
-import '../services/pocketbase_service.dart';
 import '../services/reservation_gateway.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../utils/currency_format.dart';
 import '../utils/date_format.dart';
+import '../widgets/adaptive_form.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_header.dart';
 import '../widgets/app_inputs.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/desktop_page.dart';
 import '../widgets/responsive.dart';
+import 'quick_add_unit_form.dart';
 
 /// Add Reservation, and Edit Reservation when [reservation] is given.
 ///
@@ -65,6 +67,10 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
   Unit? _unit;
   DateTime? _checkInDate; // date only
   DateTime? _checkOutDate; // date only, multi-night stay types
+
+  /// Start time picked by staff, or null to use the stay type's default
+  /// check-in time. The end time always follows the stay type's duration.
+  TimeOfDay? _startTime;
 
   bool _submitted = false; // show inline errors after the first save attempt
   bool _isSubmitting = false;
@@ -180,6 +186,8 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
     _unit = _units.where((u) => u.id == r.unitId).firstOrNull;
     _checkInDate = DateFormatUtil.dateOnly(r.startAt);
     _checkOutDate = DateFormatUtil.dateOnly(r.endAt);
+    // Keep the booking's own start time if the dates are changed later.
+    _startTime = TimeOfDay.fromDateTime(r.startAt.toLocal());
     _scheduleTouched = false;
     _prefilled = true;
   }
@@ -191,6 +199,16 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
       _stayType != null &&
       _stayType!.endsNextDay &&
       _stayType!.allowMultipleNights;
+
+  /// The start time shown in the form: the picked one, or the selected
+  /// stay type's default check-in time.
+  TimeOfDay? get _effectiveStartTime {
+    if (_startTime != null) return _startTime;
+    final stayType = _stayType;
+    if (stayType == null) return null;
+    final c = stayType.checkIn;
+    return TimeOfDay(hour: c.hour, minute: c.minute);
+  }
 
   int get _nights => _needsCheckOutDate
       ? (_checkInDate != null && _checkOutDate != null
@@ -211,10 +229,14 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
     }
     if (_stayType == null || _checkInDate == null) return null;
     if (_needsCheckOutDate && _checkOutDate == null) return null;
+    final start = _startTime;
     return BookingLogic.computeWindow(
       stayType: _stayType!,
       date: _checkInDate!,
       nights: _nights,
+      startTime: start == null
+          ? null
+          : (hour: start.hour, minute: start.minute),
     );
   }
 
@@ -295,7 +317,11 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
 
   void _selectStayType(StayType stayType) {
     setState(() {
-      if (_stayType?.id != stayType.id) _scheduleTouched = true;
+      if (_stayType?.id != stayType.id) {
+        _scheduleTouched = true;
+        // A new stay type starts at its own default check-in time.
+        _startTime = null;
+      }
       _stayType = stayType;
       _conflictError = null;
       // Keep the check-out date valid for multi-night stays.
@@ -364,6 +390,68 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
     });
   }
 
+  Future<void> _selectStartTime(BuildContext context) async {
+    final initial = _effectiveStartTime ?? const TimeOfDay(hour: 14, minute: 0);
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked == null) return;
+    setState(() {
+      _scheduleTouched = true;
+      _startTime = picked;
+      _conflictError = null;
+    });
+  }
+
+  /// "Add new unit" in the Unit dropdown: the owner types a unit name,
+  /// its type and capacity (and optionally the price for the chosen stay
+  /// type). The new unit is saved to PocketBase and selected.
+  Future<void> _openAddUnit() async {
+    // Put the dropdown back on the current selection while the form is open.
+    setState(() => _resetCount++);
+
+    final List<UnitType> unitTypes;
+    try {
+      unitTypes = await widget.gateway.getUnitTypes();
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(
+        'Could not load unit types. ${ConfigService.friendlyError(e)}',
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    final result = await showAdaptiveForm<QuickAddUnitResult>(
+      context,
+      title: 'Add New Unit',
+      builder: (_) => QuickAddUnitForm(
+        gateway: widget.gateway,
+        unitTypes: unitTypes,
+        rates: _rates,
+        stayType: _stayType,
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() {
+      _units = [..._units, result.unit];
+      final rate = result.rate;
+      if (rate != null) {
+        _rates = [
+          ..._rates.where(
+            (r) =>
+                !(r.unitTypeId == rate.unitTypeId &&
+                    r.stayTypeId == rate.stayTypeId),
+          ),
+          rate,
+        ];
+      }
+      _unit = result.unit;
+      _conflictError = null;
+      _resetCount++;
+    });
+    _showMessage('${result.unit.name} added.');
+  }
+
   /// First problem that prevents saving (besides form field errors).
   String? _blockingProblem() {
     if (_stayType == null) return 'Select a stay type.';
@@ -409,7 +497,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
       // 1. Ask PocketBase for non-cancelled bookings of this unit that
       //    overlap the new window, then re-check them locally with the
       //    same rule: newStart < existingEnd && newEnd > existingStart.
-      final candidates = await PocketBaseService.findOverlappingReservations(
+      final candidates = await widget.gateway.findOverlapping(
         unitId: unit.id,
         start: window.start,
         end: window.end,
@@ -436,7 +524,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
       }
 
       // 3. No conflict -> save (UTC dates + name/price snapshots)
-      await PocketBaseService.createReservation(
+      await widget.gateway.createReservation(
         guestName: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
         email: _emailController.text.trim(),
@@ -469,6 +557,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
         _unit = null;
         _checkInDate = null;
         _checkOutDate = null;
+        _startTime = null;
         _submitted = false;
         _isSubmitting = false;
         _resetCount++;
@@ -866,53 +955,81 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
     );
   }
 
+  /// Last item of the Unit dropdown; opens [_openAddUnit] instead of being
+  /// selected.
+  static const Unit _addUnitOption = Unit(id: '__add_unit__', name: '');
+
   Widget _unitField() {
     return FieldLabel(
       text: 'Unit',
-      child: _units.isEmpty
-          ? const _EmptyHint(
-              icon: Icons.meeting_room,
-              text: 'No active units found.',
-            )
-          : _lockable(
-              DropdownButtonFormField<Unit>(
-                key: ValueKey('unit-$_resetCount'),
-                decoration: AppInputs.decoration(
-                  hint: 'Select a unit',
-                  icon: Icons.meeting_room,
+      child: _lockable(
+        DropdownButtonFormField<Unit>(
+          key: ValueKey('unit-$_resetCount'),
+          decoration: AppInputs.decoration(
+            hint: _units.isEmpty ? 'No units yet. Add one' : 'Select a unit',
+            icon: Icons.meeting_room,
+          ),
+          style: AppText.body,
+          isExpanded: true,
+          icon: const Icon(
+            Icons.keyboard_arrow_down,
+            color: AppColors.textSecondary,
+          ),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          dropdownColor: AppColors.surface,
+          initialValue: _unit,
+          items: [
+            ..._units.map((unit) {
+              final capacity = unit.capacity > 0
+                  ? ' · up to ${unit.capacity}'
+                  : '';
+              final inactive = unit.isActive ? '' : ' (inactive)';
+              return DropdownMenuItem(
+                value: unit,
+                child: Text(
+                  '${unit.displayLabel}$capacity$inactive',
+                  overflow: TextOverflow.ellipsis,
                 ),
-                style: AppText.body,
-                isExpanded: true,
-                icon: const Icon(
-                  Icons.keyboard_arrow_down,
-                  color: AppColors.textSecondary,
-                ),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                dropdownColor: AppColors.surface,
-                initialValue: _unit,
-                items: _units.map((unit) {
-                  final capacity = unit.capacity > 0
-                      ? ' · up to ${unit.capacity}'
-                      : '';
-                  final inactive = unit.isActive ? '' : ' (inactive)';
-                  return DropdownMenuItem(
-                    value: unit,
-                    child: Text(
-                      '${unit.displayLabel}$capacity$inactive',
-                      overflow: TextOverflow.ellipsis,
+              );
+            }),
+            if (!_scheduleLocked)
+              DropdownMenuItem(
+                value: _addUnitOption,
+                child: Row(
+                  children: [
+                    const Icon(Icons.add, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Add new unit…',
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  );
-                }).toList(),
-                onChanged: _scheduleLocked
-                    ? null
-                    : (val) => setState(() {
-                        _unit = val;
-                        _conflictError = null; // re-check on save
-                      }),
-                validator: (v) => v == null ? 'Select a unit.' : null,
+                  ],
+                ),
               ),
-              'locked-unit',
-            ),
+          ],
+          onChanged: _scheduleLocked
+              ? null
+              : (val) {
+                  if (val?.id == _addUnitOption.id) {
+                    _openAddUnit();
+                    return;
+                  }
+                  setState(() {
+                    _unit = val;
+                    _conflictError = null; // re-check on save
+                  });
+                },
+          validator: (v) =>
+              v == null || v.id == _addUnitOption.id ? 'Select a unit.' : null,
+        ),
+        'locked-unit',
+      ),
     );
   }
 
@@ -930,6 +1047,37 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
           onTap: () => _selectDate(context, true),
         ),
         'locked-check-in',
+      ),
+    );
+  }
+
+  /// "2:00 PM" for a picked time (same style as the rest of the app).
+  static String _clock(TimeOfDay t) => DateFormatUtil.timeOfDay(
+    '${t.hour.toString().padLeft(2, '0')}:'
+    '${t.minute.toString().padLeft(2, '0')}',
+  );
+
+  Widget _startTimeField() {
+    final start = _effectiveStartTime;
+    final stayType = _stayType;
+    final duration = stayType?.durationMinutes;
+    return FieldLabel(
+      text: 'Check-in Time',
+      child: _lockable(
+        PickerField(
+          key: const ValueKey('start-time'),
+          value: start == null
+              ? null
+              : '${_clock(start)}'
+                    '${duration == null ? '' : ' · ${DateFormatUtil.duration(duration)}'}',
+          placeholder: 'Select a stay type first',
+          trailingIcon: Icons.access_time,
+          highlightError: _conflictError != null,
+          onTap: () {
+            if (stayType != null) _selectStartTime(context);
+          },
+        ),
+        'locked-start-time',
       ),
     );
   }
@@ -1086,6 +1234,8 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
                       ),
                       const SizedBox(height: 12),
                       _checkInField(),
+                      const SizedBox(height: 12),
+                      _startTimeField(),
                       if (_needsCheckOutDate) ...[
                         const SizedBox(height: 12),
                         _checkOutField(),
@@ -1150,7 +1300,8 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
           ? (guest.isEmpty
                 ? 'Update this booking.'
                 : 'Update the booking for $guest.')
-          : 'Book a unit for a guest. Times come from the stay type.',
+          : 'Book a unit for a guest. The stay type sets the default '
+                'start time and how long the stay lasts.',
       maxWidth: _desktopWidth,
       breadcrumbs: [
         BreadcrumbItem(
@@ -1201,7 +1352,7 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
                 icon: Icons.logout,
                 text: window != null
                     ? DateFormatUtil.shortWithTime(window.end)
-                    : 'Set by the stay type',
+                    : 'Calculated from the duration',
               ),
               'locked-check-out',
             ),
@@ -1235,7 +1386,16 @@ class _AddReservationScreenState extends State<AddReservationScreen> {
         // ── Reservation dates ──
         const FormSectionHeader('Reservation Dates', topPadding: AppSpacing.lg),
         const SizedBox(height: AppSpacing.md),
-        _pair(_checkInField(), checkOut),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _checkInField()),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: _startTimeField()),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: checkOut),
+          ],
+        ),
 
         // ── Summary: schedule and price side by side ──
         if (hasSchedule || price != null) ...[
@@ -1362,8 +1522,8 @@ class _StayTypeOption extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '${DateFormatUtil.timeOfDay(stayType.checkInTime)} – '
-                '${DateFormatUtil.timeOfDay(stayType.checkOutTime)}',
+                '${DateFormatUtil.timeOfDay(stayType.checkInTime)} · '
+                '${stayType.durationMinutes == null ? '—' : DateFormatUtil.duration(stayType.durationMinutes!)}',
                 textAlign: TextAlign.center,
                 style: AppText.caption.copyWith(color: sub, fontSize: 11),
               ),

@@ -43,11 +43,15 @@ class BookingLogic {
   // ── Time windows ───────────────────────────────────────────────────────
 
   /// Builds the stay window from the selected check-in [date] (only the
-  /// year/month/day are used) and the stay type's configured times.
+  /// year/month/day are used) and the stay type's configured duration
+  /// ([StayType.durationMinutes]).
   ///
-  /// * Same-day stay types (`endsNextDay == false`) end on [date].
-  /// * Stay types that cross midnight end on a later day: after [nights]
-  ///   days when `allowMultipleNights` is true, otherwise after 1 day.
+  /// * The stay starts at [startTime], or at the stay type's default
+  ///   check-in time when [startTime] is null.
+  /// * It ends after the configured duration. Multi-night stay types
+  ///   (`allowMultipleNights`) add one day per extra night.
+  /// * With the default start time the result is exactly the stay type's
+  ///   check-in → check-out times (e.g. Overnight 2:00 PM → 12:00 PM).
   ///
   /// Returns null when the configuration can't produce a valid range
   /// (e.g. a same-day stay type whose check-out isn't after check-in).
@@ -55,38 +59,54 @@ class BookingLogic {
     required StayType stayType,
     required DateTime date,
     int nights = 1,
+    ({int hour, int minute})? startTime,
   }) {
-    final checkIn = stayType.checkIn;
-    final checkOut = stayType.checkOut;
+    final duration = stayType.durationMinutes;
+    if (duration == null) return null;
 
-    final int endDayOffset;
-    if (!stayType.endsNextDay) {
-      endDayOffset = 0;
-    } else if (stayType.allowMultipleNights) {
+    final from = startTime ?? stayType.checkIn;
+    if (from.hour < 0 || from.hour > 23 || from.minute < 0) return null;
+    if (from.minute > 59) return null;
+
+    final int extraNights;
+    if (stayType.endsNextDay && stayType.allowMultipleNights) {
       if (nights < 1) return null;
-      endDayOffset = nights;
+      extraNights = nights - 1;
     } else {
-      endDayOffset = 1;
+      extraNights = 0;
     }
 
-    // DateTime(y, m, d + n) is calendar-day arithmetic (DST-safe).
+    // Wall-clock arithmetic with DateTime(y, m, d + n, h, m) so a stay
+    // always ends at the same clock time (DST-safe).
+    final endTotal = from.hour * 60 + from.minute + duration;
+    final endDayOffset = extraNights + endTotal ~/ (24 * 60);
+    final endMinute = endTotal % (24 * 60);
+
     final start = DateTime(
       date.year,
       date.month,
       date.day,
-      checkIn.hour,
-      checkIn.minute,
+      from.hour,
+      from.minute,
     );
     final end = DateTime(
       date.year,
       date.month,
       date.day + endDayOffset,
-      checkOut.hour,
-      checkOut.minute,
+      endMinute ~/ 60,
+      endMinute % 60,
     );
 
     if (!end.isAfter(start)) return null;
-    return StayWindow(start: start, end: end, nights: endDayOffset);
+    return StayWindow(
+      start: start,
+      end: end,
+      // Stays that end the next day count their nights (used for per-night
+      // pricing); same-day stays count calendar days crossed (usually 0).
+      nights: stayType.endsNextDay
+          ? extraNights + 1
+          : nightsBetween(start, end),
+    );
   }
 
   /// Whole calendar days between two dates (time of day ignored).
