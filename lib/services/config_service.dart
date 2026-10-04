@@ -348,7 +348,7 @@ class ConfigService {
       if (message is String && message.isNotEmpty) return message;
     }
     // Unexpected error: keep the details in the debug console only.
-    debugPrint('Unexpected error: $error');
+    if (kDebugMode) debugPrint('Unexpected error: $error');
     return 'Something went wrong. Please try again.';
   }
 }

@@ -15,10 +15,6 @@ class Unit {
   final int sortOrder;
   final String cleaningStatus;
 
-  /// Legacy nightly price carried over from `rooms`. Used only as a fallback
-  /// for Overnight stays when no rate is configured.
-  final double pricePerNight;
-
   /// Legacy free-text type carried over from `rooms`.
   final String legacyType;
 
@@ -31,7 +27,6 @@ class Unit {
     this.isActive = true,
     this.sortOrder = 0,
     this.cleaningStatus = '',
-    this.pricePerNight = 0,
     this.legacyType = '',
   });
 
@@ -49,7 +44,6 @@ class Unit {
       isActive: record.getBoolValue('isActive'),
       sortOrder: record.getIntValue('sortOrder'),
       cleaningStatus: record.getStringValue('cleaningStatus'),
-      pricePerNight: record.getDoubleValue('pricePerNight'),
       legacyType: record.getStringValue('type'),
     );
   }

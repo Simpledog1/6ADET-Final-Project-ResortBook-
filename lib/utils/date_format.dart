@@ -46,9 +46,6 @@ class DateFormatUtil {
   /// "Saturday"
   static String weekday(DateTime d) => _weekdaysLong[d.toLocal().weekday - 1];
 
-  /// "Sat"
-  static String weekdayShort(DateTime d) => weekday(d).substring(0, 3);
-
   /// "Saturday, October 3, 2026"
   static String fullDate(DateTime d) => '${weekday(d)}, ${long(d)}';
 

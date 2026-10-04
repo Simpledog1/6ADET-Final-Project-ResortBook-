@@ -34,7 +34,7 @@ class PocketBaseService {
 
       return records.map((record) => Reservation.fromRecord(record)).toList();
     } catch (e) {
-      debugPrint('Error fetching reservations: $e');
+      if (kDebugMode) debugPrint('Error fetching reservations: $e');
       rethrow;
     }
   }
@@ -64,14 +64,6 @@ class PocketBaseService {
   /// Changes only the `status` field (Check In, Complete, Cancel, Restore).
   static Future<Reservation> updateReservationStatus(String id, String status) {
     return updateReservation(id, {'status': status});
-  }
-
-  /// Every reservation for one unit (any status).
-  static Future<List<Reservation>> getReservationsForUnit(String unitId) async {
-    final records = await pb
-        .collection('reservations')
-        .getFullList(filter: pb.filter('unit = {:unit}', {'unit': unitId}));
-    return records.map((record) => Reservation.fromRecord(record)).toList();
   }
 
   /// Non-cancelled reservations of [unitId] whose time range overlaps
