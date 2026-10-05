@@ -82,14 +82,29 @@ The tests cover the booking, calendar, statistics, configuration and workflow ru
 
 ## Screenshots
 
-Design wireframes (Figma) are in `docs/assets/Wireframe screenshots/`:
+Screenshots of the running app with the demo data. The original Figma wireframes are in [docs/02-mockup.md](docs/02-mockup.md).
 
-| Dashboard | Reservation List | Calendar |
-| --- | --- | --- |
-| ![Desktop dashboard](docs/assets/Wireframe%20screenshots/Desktop%20-%20Dashboard.png) | ![Desktop reservation list](docs/assets/Wireframe%20screenshots/Desktop%20-%20Reservation%20List.png) | ![Desktop calendar](docs/assets/Wireframe%20screenshots/Desktop%20-%20Calendar%20View.png) |
-| ![Mobile dashboard](docs/assets/Wireframe%20screenshots/Mobile%20-%20Dashboard.png) | ![Mobile reservation list](docs/assets/Wireframe%20screenshots/Mobile%20-%20Reservation%20List.png) | ![Mobile calendar](docs/assets/Wireframe%20screenshots/Mobile%20-%20Calendar%20View.png) |
+### Desktop (1024 px and wider)
 
-Screenshots of the running app can be captured in debug mode with the DevicePreview screenshot tool.
+| Dashboard | Reservations |
+| --- | --- |
+| ![Desktop dashboard](docs/assets/App%20Screenshots/desktop-dashboard.png) | ![Desktop reservation list](docs/assets/App%20Screenshots/desktop-reservations.png) |
+| **Calendar** | **Add Reservation** |
+| ![Desktop calendar](docs/assets/App%20Screenshots/desktop-calendar.png) | ![Desktop add reservation](docs/assets/App%20Screenshots/desktop-add-reservation.png) |
+| **Manage Resort** | **Unit Types** |
+| ![Desktop Manage Resort](docs/assets/App%20Screenshots/desktop-manage-resort.png) | ![Desktop unit types](docs/assets/App%20Screenshots/desktop-unit-types.png) |
+| **Units** | **Stay Types** |
+| ![Desktop units](docs/assets/App%20Screenshots/desktop-units.png) | ![Desktop stay types](docs/assets/App%20Screenshots/desktop-stay-types.png) |
+| **Rates** | |
+| ![Desktop rates](docs/assets/App%20Screenshots/desktop-rates.png) | |
+
+### Phone
+
+| Dashboard | Reservation List | Calendar | Add Reservation | Add Reservation (cont.) |
+| --- | --- | --- | --- | --- |
+| ![Phone dashboard](docs/assets/App%20Screenshots/mobile-dashboard.jpg) | ![Phone reservation list](docs/assets/App%20Screenshots/mobile-reservation-list.jpg) | ![Phone calendar](docs/assets/App%20Screenshots/mobile-calendar.jpg) | ![Phone add reservation](docs/assets/App%20Screenshots/mobile-add-reservation-1.jpg) | ![Phone add reservation, lower half](docs/assets/App%20Screenshots/mobile-add-reservation-2.jpg) |
+| **Manage Resort** | **Unit Types** | **Units** | **Stay Types** | **Rates** |
+| ![Phone Manage Resort](docs/assets/App%20Screenshots/mobile-manage-resort.jpg) | ![Phone unit types](docs/assets/App%20Screenshots/mobile-unit-types.jpg) | ![Phone units](docs/assets/App%20Screenshots/mobile-units.jpg) | ![Phone stay types](docs/assets/App%20Screenshots/mobile-stay-types.jpg) | ![Phone rates](docs/assets/App%20Screenshots/mobile-rates.jpg) |
 
 ## Web build limitation
 
