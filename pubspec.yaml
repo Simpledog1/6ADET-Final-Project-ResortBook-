@@ -2,7 +2,7 @@
 # version it needs, and lists the packages you depend on.
 # Add a package with: flutter pub add <name>
 name: final_project
-description: My 6ADET final project.
+description: ResortBook, a front-desk reservation manager for small resorts.
 publish_to: "none"
 version: 1.0.0+1
 

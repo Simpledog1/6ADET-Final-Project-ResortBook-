@@ -8,25 +8,25 @@ The mockups show the final visual appearance of ResortBook across both mobile an
 
 ### Dashboard / Home
 
-![Desktop Dashboard](assets/Desktop%20-%20Dashboard.png)
-![Mobile Dashboard](assets/Mobile%20-%20Dashboard.png)
+![Desktop Dashboard](assets/Wireframe%20screenshots/Desktop%20-%20Dashboard.png)
+![Mobile Dashboard](assets/Wireframe%20screenshots/Mobile%20-%20Dashboard.png)
 
 ### Add Reservation
-![Desktop Add Reservation](assets/Desktop%20-%20Add%20Reservation.png)
-![Mobile Add Reservation](assets/Mobile%20-%20Add%20Reservation.png)
+![Desktop Add Reservation](assets/Wireframe%20screenshots/Desktop%20-%20Add%20Reservation.png)
+![Mobile Add Reservation](assets/Wireframe%20screenshots/Mobile%20-%20Add%20Reservation.png)
 
 ### Reservation List
-![Desktop Reservation List](assets/Desktop%20-%20Reservation%20List.png)
-![Mobile Reservation List](assets/Mobile%20-%20Reservation%20List.png)
+![Desktop Reservation List](assets/Wireframe%20screenshots/Desktop%20-%20Reservation%20List.png)
+![Mobile Reservation List](assets/Wireframe%20screenshots/Mobile%20-%20Reservation%20List.png)
 
 ### Reservation Details
-![Desktop Reservation Details](assets/Desktop%20-%20Reservation%20Details.png)
-![Mobile Reservation Details](assets/Mobile%20-%20Reservation%20Details.png)
+![Desktop Reservation Details](assets/Wireframe%20screenshots/Desktop%20-%20Reservation%20Details.png)
+![Mobile Reservation Details](assets/Wireframe%20screenshots/Mobile%20-%20Reservation%20Details.png)
 
 ### Calendar
 
-![Desktop Calendar View](assets/Desktop%20-%20Calendar%20View.png)
-![Mobile Calendar View](assets/Mobile%20-%20Calendar%20View.png)
+![Desktop Calendar View](assets/Wireframe%20screenshots/Desktop%20-%20Calendar%20View.png)
+![Mobile Calendar View](assets/Wireframe%20screenshots/Mobile%20-%20Calendar%20View.png)
 
 ### Screen Flow
 

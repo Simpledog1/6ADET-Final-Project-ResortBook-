@@ -1,11 +1,11 @@
 {
-  "name": "My Final Project",
-  "short_name": "Final Project",
+  "name": "ResortBook",
+  "short_name": "ResortBook",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#6750A4",
-  "description": "My 6ADET final project.",
-  "orientation": "portrait-primary",
+  "background_color": "#F8FAFC",
+  "theme_color": "#1E3A8A",
+  "description": "A front-desk reservation manager for small resorts.",
+  "orientation": "any",
   "prefer_related_applications": false
 }

@@ -2,7 +2,9 @@
 
 The ResortBook design system defines the visual and interaction standards used throughout the application. It is designed for consistent use across both mobile and desktop layouts.
 
-![Design system](assets/ResortBook_Design_System.png)
+![Design system](assets/Design%20System/ResortBook_Design_System.png)
+
+PDF version: [ResortBook_Design_System.pdf](assets/Design%20System/ResortBook_Design_System.pdf)
 
 ## Palette
 
