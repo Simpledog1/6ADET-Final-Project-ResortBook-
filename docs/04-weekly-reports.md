@@ -94,3 +94,55 @@
 * Phase 6: Creating the Reservation Details view to show expanded information and status badges.
 * Phase 7: Building the visual Calendar interface to map reservations to specific dates.
 * Phases 8 & 9: Final end-to-end integration testing and viewport padding cleanup.
+
+## Week 3: Finals, October 5, 2026
+
+### What changed this week
+
+* Completed the remaining core ResortBook screens, including the Reservation List, Reservation Details, and Calendar.
+* Generalized the reservation system from a room-only design into a configurable resort inventory system supporting different unit types such as rooms, cottages, villas, and other resort facilities.
+* Expanded the PocketBase database structure with configurable unit types, units, stay types, and rates.
+* Implemented reservation availability validation, including date and time overlap checking, capacity validation, cancelled-reservation handling, and back-to-back reservations.
+* Implemented dynamic pricing based on unit type and stay type, including overnight, day tour, night tour, and multiple-night reservations.
+* Completed the responsive desktop application shell and redesigned the desktop Dashboard, Reservation List, Reservation Details, Calendar, Add Reservation, and resort management screens.
+* Added resort management features for configuring unit types, units, stay types, and rates.
+* Implemented reservation management workflows for Reserved, Checked In, Completed, and Cancelled statuses, including editing, cancelling, restoring, and availability checks.
+* Added reservation pagination, sorting, search, status indicators, calendar visualization, dashboard statistics, and synchronized updates between reservation screens.
+* Completed final QA and release-readiness improvements, including friendly error messages, responsive layout testing, cleanup of obsolete code, updated documentation, and additional automated tests.
+* Successfully completed the final automated test suite with **184 tests passing** and `flutter analyze` reporting **no issues**.
+
+### Why
+
+* Generalizing the database and reservation system makes ResortBook useful for different types of resorts instead of limiting it to a single room-based setup.
+* Configurable stay types and rates allow resorts to support different booking schedules and pricing models without changing the application code.
+* Reservation status workflows provide a more realistic front-desk process from booking through check-in and completion.
+* The responsive desktop and mobile layouts ensure the application can be used across different screen sizes while maintaining the intended Figma design.
+* Automated testing was expanded to catch reservation, pricing, calendar, responsive layout, and management-related issues before final submission.
+
+### What broke or what I got stuck on
+
+* Encountered several integration and UI issues while connecting the reservation screens to the generalized PocketBase structure.
+* Had to resolve date and time handling issues when storing reservation schedules in PocketBase, particularly for cross-midnight and multi-day reservations.
+* Encountered UI testing issues with the desktop reservation pagination because the pagination controls were initially outside the widget test viewport. The test was corrected without changing the actual application behavior.
+* Encountered various responsive layout and desktop UI issues during the final polish phase and adjusted the implementation while preserving the mobile and desktop designs.
+* The Flutter test suite also produced a PocketBase connection error message during one dashboard widget test because the test environment did not have the expected local backend data, but the test itself continued successfully and the complete suite ultimately passed.
+
+### What is left
+
+* Complete the final documentation and demonstration materials.
+* Record and prepare the final project demonstration video.
+* Perform any final visual checks against the Figma mockups.
+* Prepare the final GitHub repository and project submission.
+* Make any minor fixes discovered during the final demonstration or submission review.
+
+### Hours spent, roughly:
+
+* 15 hours
+
+### Next week I will:
+
+* Finalize the project documentation and demonstration video.
+* Perform the final end-to-end demonstration of the reservation workflow.
+* Verify the final mobile and desktop layouts.
+* Review the GitHub repository for unnecessary files and unfinished documentation.
+* Complete the final project submission.
