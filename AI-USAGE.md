@@ -353,6 +353,21 @@ Commits:
 
 This implementation saves screenshots generated from Device Preview and was developed through several small iterations after I researched the process and used ChatGPT to troubleshoot the Windows dependency issue.
 
+#### Written by me
+
+**Screenshot export in `lib/main.dart`** (about 20 lines)
+
+* **Commits** (all on 2026-09-27, in this order):
+  * [`8a2c4a4`](https://github.com/Simpledog1/6ADET-Final-Project-ResortBook-/commit/8a2c4a4): added the `device_preview_screenshot` package and a screenshot button in the Device Preview toolbar.
+  * [`1cd6770`](https://github.com/Simpledog1/6ADET-Final-Project-ResortBook-/commit/1cd6770): added the `onScreenshot` callback, which saves each screenshot as a timestamped PNG with `dart:io` `File`.
+  * [`b6b4d3b`](https://github.com/Simpledog1/6ADET-Final-Project-ResortBook-/commit/b6b4d3b): changed it to save to the absolute `G:/.../Documentation Screenshots/` path and to use `debugPrint`.
+  * [`dfd39bc`](https://github.com/Simpledog1/6ADET-Final-Project-ResortBook-/commit/dfd39bc): added error handling with `try/catch`. This commit also contains the 4 PNG screenshots in `docs/assets/Documentation Screenshots/` that the feature saved, which shows it worked.
+* **What it does:** in a Windows debug build, the camera button in the Device Preview toolbar saves the current screen as a PNG named with the time in milliseconds, so files never overwrite each other. It creates the folder if needed and prints whether the save worked.
+* **How I built it:** I learned how to do it from Google and YouTube. When it didn't work, ChatGPT helped me find that I needed the Visual Studio dependencies for the Windows build, because saving files with `dart:io` doesn't work in the browser.
+* **Honest limits:**
+  * Git shows these commits under my name, but it can't prove who physically typed the code or that it was written without any AI help.
+  * This is my documented code contribution, but it's only about 20 lines. By itself it does **not** meet a 20% code-authorship requirement.
+
 I also personally contributed to the theme/spacing implementation and parts of the reservation screens, but the Git history does not provide enough evidence for me to claim those sections as entirely personally written.
 
 ---

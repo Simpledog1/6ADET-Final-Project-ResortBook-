@@ -1,11 +1,14 @@
 # ResortBook
 
+[![Made with AI](https://img.shields.io/badge/Made_with-AI_assistance-blue)](AI-USAGE.md)
+
 > A front-desk reservation manager for small independent resorts — units, stay types, rates and bookings in one Flutter app backed by PocketBase.
 
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
 **Author:** [Simpledog1](https://github.com/Simpledog1)
 **Web build:** https://simpledog1.github.io/6ADET-Final-Project-ResortBook-/ — see [Web build limitation](#web-build-limitation) (it needs a reachable PocketBase server)
 **Demo video:** see [docs/05-demo-video.md](docs/05-demo-video.md)
+**AI use:** built with heavy AI help: Gemini (Google) for the first version (Sept 23 – Oct 3), then Claude (Anthropic) for most of the current code, tests and docs. I set the requirements, ran and tested everything, and decided what to keep. Details in [AI-USAGE.md](AI-USAGE.md).
 
 ---
 
@@ -113,7 +116,7 @@ A web build is published by the GitHub Actions workflow (`.github/workflows/depl
 
 ## AI use
 
-AI assistance (Claude) was used for planning, code generation, tests and documentation during development. All changes were reviewed, run and tested by the author.
+AI assistance (Gemini for the first version, then Claude) was used for planning, code generation, tests and documentation during development. All changes were reviewed, run and tested by the author. What the AI did, where it got things wrong and which parts I wrote myself are in [AI-USAGE.md](AI-USAGE.md).
 
 ## Licence
 
