@@ -87,17 +87,20 @@ jobs:
       - name: Build web
         if: steps.check.outputs.ready == 'true'
         env:
-          # Uncomment to match the repository secrets you actually created.
-          # SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          # SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          DUMMY: unused
+          # The PUBLIC PocketBase address (not a secret). Set it once under
+          # Settings > Secrets and variables > Actions > Variables > POCKETBASE_URL.
+          POCKETBASE_URL: ${{ vars.POCKETBASE_URL }}
         # --base-href matters: on a project page the site lives at
         # username.github.io/<repo>/, and without it every asset 404s and you get
         # a white screen.
         run: |
+          if [ -z "$POCKETBASE_URL" ]; then
+            echo "::warning::Repository variable POCKETBASE_URL is not set, so this build points at 127.0.0.1 and cannot reach any server. See README > Deploying the public demo."
+            POCKETBASE_URL="http://127.0.0.1:8090"
+          fi
           flutter build web --release \
-            --base-href "/${{ github.event.repository.name }}/"
-          # add one --dart-define=NAME=$NAME line per secret you uncommented above
+            --base-href "/${{ github.event.repository.name }}/" \
+            --dart-define=POCKETBASE_URL="$POCKETBASE_URL"
 
       - if: steps.check.outputs.ready == 'true'
         uses: actions/upload-pages-artifact@v5

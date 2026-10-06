@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:device_preview_screenshot/device_preview_screenshot.dart';
 import 'dart:io';
 import 'theme/app_theme.dart';
-import 'widgets/app_shell.dart';
+import 'services/pocketbase_service.dart';
+import 'widgets/auth_gate.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Restores the saved PocketBase login (if any) before the first screen.
+  await PocketBaseService.init();
   runApp(
     DevicePreview(
       // The device frame and its screenshot tool are only for the Windows
@@ -47,9 +51,9 @@ class ResortBookApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
-      // Responsive root: phone/tablet flow below 1024 px, desktop sidebar
-      // layout from 1024 px.
-      home: const AppShell(),
+      // Login first; once signed in, the responsive AppShell (phone/tablet
+      // flow below 1024 px, desktop sidebar layout from 1024 px).
+      home: const AuthGate(),
       debugShowCheckedModeBanner: false,
     );
   }

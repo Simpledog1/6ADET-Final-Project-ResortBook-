@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import 'auth_gate.dart';
 
 /// Navy header from the Figma wireframe.
 ///
@@ -55,18 +56,37 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildHome() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Image.asset(
-          'assets/images/logo.png',
-          width: 34,
-          height: 34,
-          filterQuality: FilterQuality.medium,
-        ),
-        const SizedBox(width: 6),
-        Text(title, style: AppText.brand),
-      ],
+    return Builder(
+      builder: (context) {
+        final auth = AuthScope.maybeOf(context);
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 34,
+                  height: 34,
+                  filterQuality: FilterQuality.medium,
+                ),
+                const SizedBox(width: 6),
+                Text(title, style: AppText.brand),
+              ],
+            ),
+            if (auth != null)
+              Positioned(
+                right: 0,
+                child: IconButton(
+                  tooltip: 'Sign out',
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  onPressed: auth.signOut,
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

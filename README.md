@@ -6,7 +6,7 @@
 
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
 **Author:** [Simpledog1](https://github.com/Simpledog1)
-**Web build:** https://simpledog1.github.io/6ADET-Final-Project-ResortBook-/ — see [Web build limitation](#web-build-limitation) (it needs a reachable PocketBase server)
+**Web build:** https://simpledog1.github.io/6ADET-Final-Project-ResortBook-/ — see [Web build and deployment](#web-build-and-deployment) (it needs a publicly hosted PocketBase and a login)
 **Demo video:** see [docs/05-demo-video.md](docs/05-demo-video.md)
 **AI use:** built with heavy AI help: Gemini (Google) for the first version (Sept 23 – Oct 3), then Claude (Anthropic) for most of the current code, tests and docs. I set the requirements, ran and tested everything, and decided what to keep. Details in [AI-USAGE.md](AI-USAGE.md).
 
@@ -36,8 +36,8 @@ Front-desk staff and managers of small-to-medium resorts. It is an internal staf
 | --- | --- |
 | Framework | Flutter (Dart), Material 3, bundled Inter font |
 | State | `setState` + `FutureBuilder` (no state-management package) |
-| Backend / storage | [PocketBase](https://pocketbase.io) v0.40.4, running locally |
-| Packages | `pocketbase` (API client), `device_preview` + `device_preview_screenshot` (debug-only phone frames and screenshots) |
+| Backend / storage | [PocketBase](https://pocketbase.io) v0.40.4 (local for development, separately hosted for the public demo) |
+| Packages | `pocketbase` (API client), `shared_preferences` (keeps the login across reloads), `device_preview` + `device_preview_screenshot` (debug-only phone frames and screenshots) |
 
 ### Screen sizes
 
@@ -57,9 +57,12 @@ Front-desk staff and managers of small-to-medium resorts. It is an internal staf
    ```bash
    ./pocketbase serve
    ```
-   The migrations run automatically on start and create/update the `unit_types`, `units`, `stay_types`, `rates` and `reservations` collections. Create a superuser when prompted (admin UI: http://127.0.0.1:8090/_/).
-4. The app expects the server at `http://127.0.0.1:8090` (set in `lib/services/pocketbase_service.dart`). The collection API rules are open for local use (see [Security and privacy](docs/06-security-and-privacy.md)).
+   The migrations run automatically on start and create/update the `unit_types`, `units`, `stay_types`, `rates` and `reservations` collections and **lock the API rules to signed-in users**. Create a superuser when prompted (admin UI: http://127.0.0.1:8090/_/).
+4. Create a login: admin UI > Collections > `users` > New record (email + password). The app has no sign-up screen and the API refuses public registration.
+5. By default the app uses `http://127.0.0.1:8090`. The address is read in one place, `lib/config/app_config.dart`; override it at run/build time with `--dart-define=POCKETBASE_URL=...` (see below).
 
+> **Fresh PocketBase install:** import `pocketbase/pb_schema.json` instead (admin UI > Settings > Import collections). It contains every collection with the production API rules. The migrations below only apply to this project's existing database.
+>
 > The migrations upgrade this project's original `rooms` and `reservations` collections (they look them up by their collection IDs, rename `rooms` to `units` and keep existing bookings). They are meant for this project's existing database; on a completely fresh PocketBase install they won't apply as-is, and the collections would need to be created to match the fields shown in the migration files.
 
 ### 2. Flutter app
@@ -68,6 +71,8 @@ Front-desk staff and managers of small-to-medium resorts. It is an internal staf
 flutter pub get
 flutter run -d windows    # or: flutter run -d chrome / an emulator
 ```
+
+Sign in with the user you created in PocketBase. To use a different server (for example the public one): `flutter run -d chrome --dart-define=POCKETBASE_URL=https://your-pocketbase.example.com`.
 
 Then open **Manage Resort** to add unit types, units, stay types and rates before adding reservations.
 
@@ -106,13 +111,28 @@ Screenshots of the running app with the demo data. The original Figma wireframes
 | **Manage Resort** | **Unit Types** | **Units** | **Stay Types** | **Rates** |
 | ![Phone Manage Resort](docs/assets/App%20Screenshots/mobile-manage-resort.jpg) | ![Phone unit types](docs/assets/App%20Screenshots/mobile-unit-types.jpg) | ![Phone units](docs/assets/App%20Screenshots/mobile-units.jpg) | ![Phone stay types](docs/assets/App%20Screenshots/mobile-stay-types.jpg) | ![Phone rates](docs/assets/App%20Screenshots/mobile-rates.jpg) |
 
-## Web build limitation
+## Web build and deployment
 
-A web build is published by the GitHub Actions workflow (`.github/workflows/deploy-web.yml`), but the app talks to PocketBase at `http://127.0.0.1:8090` — the computer it runs on. A static GitHub Pages site cannot reach your local PocketBase (and an `https` page cannot call a plain `http` local address), so **the hosted web build shows "Cannot reach PocketBase" unless a reachable PocketBase backend is set up**. No public backend is part of this project. Run the app locally with PocketBase as described above; the demo video and screenshots are the primary showcase.
+```
+DEVELOPMENT                                     PRODUCTION
+Flutter app (Windows / Chrome)                  Browser
+        |                                               |
+Local PocketBase  http://127.0.0.1:8090         GitHub Pages (Flutter web)
+                                                        |
+                                                Public PocketBase (HTTPS)
+                                                        |
+                                                Signed-in ResortBook users only
+```
+
+- **Web viewport:** the release web build shows ResortBook directly in the whole browser window (DevicePreview is debug-only and never enabled on web). Below 600 px you get the phone layout, 600-1023 px the tablet layout, from 1024 px the desktop sidebar layout.
+- **Login:** the app opens on a Sign In page. Accounts are created by the PocketBase admin; there is **no public registration**. The session is saved in the browser, so a reload keeps you signed in until you use **Sign out**.
+- **API rules:** the data is protected by PocketBase itself, not just the UI: without a login the API returns no data and rejects writes (see [Security and privacy](docs/06-security-and-privacy.md)).
+- **Configuration:** the PocketBase address is `POCKETBASE_URL` (a build-time `--dart-define`, default `http://127.0.0.1:8090`; the GitHub workflow takes it from the repository variable `POCKETBASE_URL`). It is not a secret. Never commit the PocketBase admin password, `pb_data/`, or `.env` files.
+- **Hosting PocketBase publicly** is a manual step that needs your own hosting account: see [docs/07-deployment.md](docs/07-deployment.md). Until a public PocketBase URL is configured, the hosted web build cannot reach any server.
 
 ## Known limitations
 
-- No authentication or user accounts; anyone who can reach the PocketBase server can read and change data (local use only).
+- Simple authentication only: one shared kind of account (no roles or password reset); accounts are managed in the PocketBase admin UI. Every signed-in user can change all data.
 - If two people edit the same reservation at the same time, the last save wins. The overlap check happens just before saving, so two simultaneous bookings for the same slot are theoretically possible.
 - Completing a stay early doesn't shorten the booked time window; the unit stays blocked until the booked end time.
 - No payments, notifications, housekeeping or guest-facing online booking (out of scope).
@@ -126,6 +146,7 @@ A web build is published by the GitHub Actions workflow (`.github/workflows/depl
 | [Design system](docs/03-design-system.md) | colors, type, spacing, components |
 | [Weekly reports](docs/04-weekly-reports.md) | what happened each week |
 | [Demo video](docs/05-demo-video.md) | the recording and what it shows |
+| [Deployment guide](docs/07-deployment.md) | hosting PocketBase publicly and publishing the web build |
 | [Security and privacy](docs/06-security-and-privacy.md) | what is stored and how it is protected |
 | [Code overview](lib/README.md) | how the `lib/` folder is organised |
 

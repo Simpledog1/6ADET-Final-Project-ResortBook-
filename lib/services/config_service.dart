@@ -53,7 +53,7 @@ class ReservationUsage {
 class ConfigService {
   ConfigService._();
 
-  static final _pb = PocketBaseService.pb;
+  static PocketBase get _pb => PocketBaseService.pb;
 
   static String? _activeFilter(bool activeOnly) =>
       activeOnly ? 'isActive = true' : null;

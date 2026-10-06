@@ -10,6 +10,7 @@ import '../screens/manage/units_screen.dart';
 import '../screens/reservation_list_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+import 'auth_gate.dart';
 import 'responsive.dart';
 
 /// Root of the app.
@@ -115,6 +116,7 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = AuthScope.maybeOf(context);
     return Container(
       height: 64,
       color: AppColors.primary,
@@ -129,6 +131,20 @@ class _TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text('ResortBook', style: AppText.brand.copyWith(fontSize: 22)),
+          const Spacer(),
+          if (auth != null) ...[
+            Text(
+              auth.userEmail ?? '',
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: auth.signOut,
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('Sign out'),
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
+            ),
+          ],
         ],
       ),
     );

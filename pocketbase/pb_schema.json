@@ -1,0 +1,1065 @@
+[
+    {
+        "id":  "_pb_users_auth_",
+        "listRule":  "id = @request.auth.id",
+        "viewRule":  "id = @request.auth.id",
+        "createRule":  null,
+        "updateRule":  null,
+        "deleteRule":  null,
+        "name":  "users",
+        "type":  "auth",
+        "fields":  [
+                       {
+                           "autogeneratePattern":  "[a-z0-9]{15}",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text3208210256",
+                           "max":  15,
+                           "min":  15,
+                           "name":  "id",
+                           "pattern":  "^[a-z0-9]+$",
+                           "presentable":  false,
+                           "primaryKey":  true,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "text"
+                       },
+                       {
+                           "cost":  0,
+                           "help":  "",
+                           "hidden":  true,
+                           "id":  "password901924565",
+                           "max":  0,
+                           "min":  8,
+                           "name":  "password",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "password"
+                       },
+                       {
+                           "autogeneratePattern":  "[a-zA-Z0-9]{50}",
+                           "help":  "",
+                           "hidden":  true,
+                           "id":  "text2504183744",
+                           "max":  60,
+                           "min":  30,
+                           "name":  "tokenKey",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "text"
+                       },
+                       {
+                           "exceptDomains":  [
+
+                                             ],
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "email3885137012",
+                           "name":  "email",
+                           "onlyDomains":  [
+
+                                           ],
+                           "presentable":  false,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "email"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "bool1547992806",
+                           "name":  "emailVisibility",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  true,
+                           "type":  "bool"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "bool256245529",
+                           "name":  "verified",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  true,
+                           "type":  "bool"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text1579384326",
+                           "max":  255,
+                           "min":  0,
+                           "name":  "name",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "file376926767",
+                           "maxSelect":  1,
+                           "maxSize":  0,
+                           "mimeTypes":  [
+                                             "image/jpeg",
+                                             "image/png",
+                                             "image/svg+xml",
+                                             "image/gif",
+                                             "image/webp"
+                                         ],
+                           "name":  "avatar",
+                           "presentable":  false,
+                           "protected":  false,
+                           "required":  false,
+                           "system":  false,
+                           "thumbs":  [
+
+                                      ],
+                           "type":  "file"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate2990389176",
+                           "name":  "created",
+                           "onCreate":  true,
+                           "onUpdate":  false,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate3332085495",
+                           "name":  "updated",
+                           "onCreate":  true,
+                           "onUpdate":  true,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       }
+                   ],
+        "indexes":  [
+                        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+                        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != \u0027\u0027"
+                    ],
+        "created":  "2026-09-27 03:49:45.916Z",
+        "updated":  "2026-10-06 06:56:05.828Z",
+        "system":  false,
+        "authRule":  "",
+        "manageRule":  null,
+        "authAlert":  {
+                          "enabled":  true,
+                          "emailTemplate":  {
+                                                "subject":  "Login from a new location",
+                                                "body":  "\u003cp\u003eHello,\u003c/p\u003e\n\u003cp\u003eWe noticed a login to your {APP_NAME} account from a new location:\u003c/p\u003e\n\u003cp\u003e\u003cem\u003e{ALERT_INFO}\u003c/em\u003e\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eIf this wasn\u0027t you, you should immediately change your {APP_NAME} account password to revoke access from all other locations.\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003eIf this was you, you may disregard this email.\u003c/p\u003e\n\u003cp\u003e\n  Thanks,\u003cbr/\u003e\n  {APP_NAME} team\n\u003c/p\u003e"
+                                            }
+                      },
+        "oauth2":  {
+                       "providers":  [
+
+                                     ],
+                       "mappedFields":  {
+                                            "id":  "",
+                                            "name":  "name",
+                                            "username":  "",
+                                            "avatarURL":  "avatar"
+                                        },
+                       "enabled":  false
+                   },
+        "passwordAuth":  {
+                             "enabled":  true,
+                             "identityFields":  [
+                                                    "email"
+                                                ]
+                         },
+        "mfa":  {
+                    "enabled":  false,
+                    "duration":  600,
+                    "rule":  ""
+                },
+        "otp":  {
+                    "enabled":  false,
+                    "duration":  180,
+                    "length":  8,
+                    "emailTemplate":  {
+                                          "subject":  "OTP for {APP_NAME}",
+                                          "body":  "\u003cp\u003eHello,\u003c/p\u003e\n\u003cp\u003eYour one-time password is: \u003cstrong\u003e{OTP}\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003e\u003ci\u003eIf you didn\u0027t ask for the one-time password, you can ignore this email.\u003c/i\u003e\u003c/p\u003e\n\u003cp\u003e\n  Thanks,\u003cbr/\u003e\n  {APP_NAME} team\n\u003c/p\u003e"
+                                      }
+                },
+        "authToken":  {
+                          "duration":  432000
+                      },
+        "passwordResetToken":  {
+                                   "duration":  1800
+                               },
+        "emailChangeToken":  {
+                                 "duration":  1800
+                             },
+        "verificationToken":  {
+                                  "duration":  86400
+                              },
+        "fileToken":  {
+                          "duration":  180
+                      },
+        "verificationTemplate":  {
+                                     "subject":  "Verify your {APP_NAME} email",
+                                     "body":  "\u003cp\u003eHello,\u003c/p\u003e\n\u003cp\u003eThank you for joining us at {APP_NAME}.\u003c/p\u003e\n\u003cp\u003eClick on the button below to verify your email address.\u003c/p\u003e\n\u003cp\u003e\n  \u003ca class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-verification/{TOKEN}\" target=\"_blank\" rel=\"noopener\"\u003eVerify\u003c/a\u003e\n\u003c/p\u003e\n\u003cp\u003e\u003ci\u003eIf you didn\u0027t recently register, please ignore this email.\u003c/i\u003e\u003c/p\u003e\n\u003cp\u003e\n  Thanks,\u003cbr/\u003e\n  {APP_NAME} team\n\u003c/p\u003e"
+                                 },
+        "resetPasswordTemplate":  {
+                                      "subject":  "Reset your {APP_NAME} password",
+                                      "body":  "\u003cp\u003eHello,\u003c/p\u003e\n\u003cp\u003eClick on the button below to reset your password.\u003c/p\u003e\n\u003cp\u003e\n  \u003ca class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-password-reset/{TOKEN}\" target=\"_blank\" rel=\"noopener\"\u003eReset password\u003c/a\u003e\n\u003c/p\u003e\n\u003cp\u003e\u003ci\u003eIf you didn\u0027t ask to reset your password, please ignore this email.\u003c/i\u003e\u003c/p\u003e\n\u003cp\u003e\n  Thanks,\u003cbr/\u003e\n  {APP_NAME} team\n\u003c/p\u003e"
+                                  },
+        "confirmEmailChangeTemplate":  {
+                                           "subject":  "Confirm your {APP_NAME} new email address",
+                                           "body":  "\u003cp\u003eHello,\u003c/p\u003e\n\u003cp\u003eClick on the button below to confirm your new email address.\u003c/p\u003e\n\u003cp\u003e\n  \u003ca class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\"\u003eConfirm new email\u003c/a\u003e\n\u003c/p\u003e\n\u003cp\u003e\u003ci\u003eIf you didn\u0027t ask to change your email address, please ignore this email.\u003c/i\u003e\u003c/p\u003e\n\u003cp\u003e\n  Thanks,\u003cbr/\u003e\n  {APP_NAME} team\n\u003c/p\u003e"
+                                       }
+    },
+    {
+        "id":  "pbc_unit_types",
+        "listRule":  "@request.auth.id != \"\"",
+        "viewRule":  "@request.auth.id != \"\"",
+        "createRule":  "@request.auth.id != \"\"",
+        "updateRule":  "@request.auth.id != \"\"",
+        "deleteRule":  "@request.auth.id != \"\"",
+        "name":  "unit_types",
+        "type":  "base",
+        "fields":  [
+                       {
+                           "autogeneratePattern":  "[a-z0-9]{15}",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text3208210256",
+                           "max":  15,
+                           "min":  15,
+                           "name":  "id",
+                           "pattern":  "^[a-z0-9]+$",
+                           "presentable":  false,
+                           "primaryKey":  true,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_ut_name",
+                           "max":  100,
+                           "min":  0,
+                           "name":  "name",
+                           "pattern":  "",
+                           "presentable":  true,
+                           "primaryKey":  false,
+                           "required":  true,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_ut_description",
+                           "max":  1000,
+                           "min":  0,
+                           "name":  "description",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_ut_capacity",
+                           "max":  null,
+                           "min":  0,
+                           "name":  "defaultCapacity",
+                           "onlyInt":  true,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "bool_ut_active",
+                           "name":  "isActive",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "bool"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_ut_sort",
+                           "max":  null,
+                           "min":  null,
+                           "name":  "sortOrder",
+                           "onlyInt":  true,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate_ut_created",
+                           "name":  "created",
+                           "onCreate":  true,
+                           "onUpdate":  false,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate_ut_updated",
+                           "name":  "updated",
+                           "onCreate":  true,
+                           "onUpdate":  true,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       }
+                   ],
+        "indexes":  [
+                        "CREATE UNIQUE INDEX `idx_unit_types_name` ON `unit_types` (`name`)"
+                    ],
+        "created":  "2026-10-03 10:43:19.688Z",
+        "updated":  "2026-10-06 06:56:05.804Z",
+        "system":  false
+    },
+    {
+        "id":  "pbc_stay_types",
+        "listRule":  "@request.auth.id != \"\"",
+        "viewRule":  "@request.auth.id != \"\"",
+        "createRule":  "@request.auth.id != \"\"",
+        "updateRule":  "@request.auth.id != \"\"",
+        "deleteRule":  "@request.auth.id != \"\"",
+        "name":  "stay_types",
+        "type":  "base",
+        "fields":  [
+                       {
+                           "autogeneratePattern":  "[a-z0-9]{15}",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text3208210256",
+                           "max":  15,
+                           "min":  15,
+                           "name":  "id",
+                           "pattern":  "^[a-z0-9]+$",
+                           "presentable":  false,
+                           "primaryKey":  true,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_st_name",
+                           "max":  100,
+                           "min":  0,
+                           "name":  "name",
+                           "pattern":  "",
+                           "presentable":  true,
+                           "primaryKey":  false,
+                           "required":  true,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_st_description",
+                           "max":  1000,
+                           "min":  0,
+                           "name":  "description",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_st_checkin",
+                           "max":  0,
+                           "min":  0,
+                           "name":  "checkInTime",
+                           "pattern":  "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  true,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_st_checkout",
+                           "max":  0,
+                           "min":  0,
+                           "name":  "checkOutTime",
+                           "pattern":  "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  true,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "bool_st_next_day",
+                           "name":  "endsNextDay",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "bool"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "bool_st_multi",
+                           "name":  "allowMultipleNights",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "bool"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "select_st_basis",
+                           "maxSelect":  1,
+                           "name":  "pricingBasis",
+                           "presentable":  false,
+                           "required":  true,
+                           "system":  false,
+                           "type":  "select",
+                           "values":  [
+                                          "per_night",
+                                          "per_stay"
+                                      ]
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "bool_st_active",
+                           "name":  "isActive",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "bool"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_st_sort",
+                           "max":  null,
+                           "min":  null,
+                           "name":  "sortOrder",
+                           "onlyInt":  true,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate_st_created",
+                           "name":  "created",
+                           "onCreate":  true,
+                           "onUpdate":  false,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate_st_updated",
+                           "name":  "updated",
+                           "onCreate":  true,
+                           "onUpdate":  true,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       }
+                   ],
+        "indexes":  [
+                        "CREATE UNIQUE INDEX `idx_stay_types_name` ON `stay_types` (`name`)"
+                    ],
+        "created":  "2026-10-03 10:43:19.748Z",
+        "updated":  "2026-10-06 06:56:05.814Z",
+        "system":  false
+    },
+    {
+        "id":  "pbc_3085411453",
+        "listRule":  "@request.auth.id != \"\"",
+        "viewRule":  "@request.auth.id != \"\"",
+        "createRule":  "@request.auth.id != \"\"",
+        "updateRule":  "@request.auth.id != \"\"",
+        "deleteRule":  "@request.auth.id != \"\"",
+        "name":  "units",
+        "type":  "base",
+        "fields":  [
+                       {
+                           "autogeneratePattern":  "[a-z0-9]{15}",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text3208210256",
+                           "max":  15,
+                           "min":  15,
+                           "name":  "id",
+                           "pattern":  "^[a-z0-9]+$",
+                           "presentable":  false,
+                           "primaryKey":  true,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text1371035477",
+                           "max":  0,
+                           "min":  0,
+                           "name":  "name",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text2363381545",
+                           "max":  0,
+                           "min":  0,
+                           "name":  "type",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number2888132635",
+                           "max":  null,
+                           "min":  null,
+                           "name":  "capacity",
+                           "onlyInt":  false,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number2788629896",
+                           "max":  null,
+                           "min":  null,
+                           "name":  "pricePerNight",
+                           "onlyInt":  false,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text3977633831",
+                           "max":  0,
+                           "min":  0,
+                           "name":  "cleaningStatus",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate2990389176",
+                           "name":  "created",
+                           "onCreate":  true,
+                           "onUpdate":  false,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate3332085495",
+                           "name":  "updated",
+                           "onCreate":  true,
+                           "onUpdate":  true,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       },
+                       {
+                           "cascadeDelete":  false,
+                           "collectionId":  "pbc_unit_types",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "relation_unit_type",
+                           "maxSelect":  1,
+                           "minSelect":  0,
+                           "name":  "unitType",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "relation"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "bool_unit_active",
+                           "name":  "isActive",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "bool"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_unit_sort",
+                           "max":  null,
+                           "min":  null,
+                           "name":  "sortOrder",
+                           "onlyInt":  true,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       }
+                   ],
+        "indexes":  [
+
+                    ],
+        "created":  "2026-09-27 03:54:43.931Z",
+        "updated":  "2026-10-06 06:56:05.810Z",
+        "system":  false
+    },
+    {
+        "id":  "pbc_rates",
+        "listRule":  "@request.auth.id != \"\"",
+        "viewRule":  "@request.auth.id != \"\"",
+        "createRule":  "@request.auth.id != \"\"",
+        "updateRule":  "@request.auth.id != \"\"",
+        "deleteRule":  "@request.auth.id != \"\"",
+        "name":  "rates",
+        "type":  "base",
+        "fields":  [
+                       {
+                           "autogeneratePattern":  "[a-z0-9]{15}",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text3208210256",
+                           "max":  15,
+                           "min":  15,
+                           "name":  "id",
+                           "pattern":  "^[a-z0-9]+$",
+                           "presentable":  false,
+                           "primaryKey":  true,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "text"
+                       },
+                       {
+                           "cascadeDelete":  true,
+                           "collectionId":  "pbc_unit_types",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "relation_rate_unit_type",
+                           "maxSelect":  1,
+                           "minSelect":  0,
+                           "name":  "unitType",
+                           "presentable":  false,
+                           "required":  true,
+                           "system":  false,
+                           "type":  "relation"
+                       },
+                       {
+                           "cascadeDelete":  true,
+                           "collectionId":  "pbc_stay_types",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "relation_rate_stay_type",
+                           "maxSelect":  1,
+                           "minSelect":  0,
+                           "name":  "stayType",
+                           "presentable":  false,
+                           "required":  true,
+                           "system":  false,
+                           "type":  "relation"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_rate_price",
+                           "max":  null,
+                           "min":  0,
+                           "name":  "price",
+                           "onlyInt":  false,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate_rate_created",
+                           "name":  "created",
+                           "onCreate":  true,
+                           "onUpdate":  false,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate_rate_updated",
+                           "name":  "updated",
+                           "onCreate":  true,
+                           "onUpdate":  true,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       }
+                   ],
+        "indexes":  [
+                        "CREATE UNIQUE INDEX `idx_rates_unit_type_stay_type` ON `rates` (`unitType`, `stayType`)"
+                    ],
+        "created":  "2026-10-03 10:43:19.833Z",
+        "updated":  "2026-10-06 06:56:05.817Z",
+        "system":  false
+    },
+    {
+        "id":  "pbc_1473635903",
+        "listRule":  "@request.auth.id != \"\"",
+        "viewRule":  "@request.auth.id != \"\"",
+        "createRule":  "@request.auth.id != \"\"",
+        "updateRule":  "@request.auth.id != \"\"",
+        "deleteRule":  null,
+        "name":  "reservations",
+        "type":  "base",
+        "fields":  [
+                       {
+                           "autogeneratePattern":  "[a-z0-9]{15}",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text3208210256",
+                           "max":  15,
+                           "min":  15,
+                           "name":  "id",
+                           "pattern":  "^[a-z0-9]+$",
+                           "presentable":  false,
+                           "primaryKey":  true,
+                           "required":  true,
+                           "system":  true,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text3179557681",
+                           "max":  0,
+                           "min":  0,
+                           "name":  "guestName",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text1146066909",
+                           "max":  0,
+                           "min":  0,
+                           "name":  "phone",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "exceptDomains":  [
+
+                                             ],
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "email3885137012",
+                           "name":  "email",
+                           "onlyDomains":  [
+
+                                           ],
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "email"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "date2216536877",
+                           "max":  "",
+                           "min":  "",
+                           "name":  "startAt",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "date"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "date3753466343",
+                           "max":  "",
+                           "min":  "",
+                           "name":  "endAt",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "date"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text2063623452",
+                           "max":  0,
+                           "min":  0,
+                           "name":  "status",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "cascadeDelete":  false,
+                           "collectionId":  "pbc_3085411453",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "relation3984119862",
+                           "maxSelect":  0,
+                           "minSelect":  0,
+                           "name":  "unit",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "relation"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate2990389176",
+                           "name":  "created",
+                           "onCreate":  true,
+                           "onUpdate":  false,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       },
+                       {
+                           "hidden":  false,
+                           "id":  "autodate3332085495",
+                           "name":  "updated",
+                           "onCreate":  true,
+                           "onUpdate":  true,
+                           "presentable":  false,
+                           "system":  false,
+                           "type":  "autodate"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_res_guests",
+                           "max":  null,
+                           "min":  0,
+                           "name":  "guestCount",
+                           "onlyInt":  true,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "cascadeDelete":  false,
+                           "collectionId":  "pbc_stay_types",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "relation_res_stay_type",
+                           "maxSelect":  1,
+                           "minSelect":  0,
+                           "name":  "stayType",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "relation"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_res_notes",
+                           "max":  2000,
+                           "min":  0,
+                           "name":  "notes",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_res_unit_name",
+                           "max":  200,
+                           "min":  0,
+                           "name":  "unitName",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_res_unit_type_name",
+                           "max":  200,
+                           "min":  0,
+                           "name":  "unitTypeName",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "autogeneratePattern":  "",
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "text_res_stay_type_name",
+                           "max":  200,
+                           "min":  0,
+                           "name":  "stayTypeName",
+                           "pattern":  "",
+                           "presentable":  false,
+                           "primaryKey":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "text"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_res_rate",
+                           "max":  null,
+                           "min":  0,
+                           "name":  "rate",
+                           "onlyInt":  false,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "select_res_rate_basis",
+                           "maxSelect":  1,
+                           "name":  "rateBasis",
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "select",
+                           "values":  [
+                                          "per_night",
+                                          "per_stay"
+                                      ]
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_res_quantity",
+                           "max":  null,
+                           "min":  0,
+                           "name":  "quantity",
+                           "onlyInt":  true,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       },
+                       {
+                           "help":  "",
+                           "hidden":  false,
+                           "id":  "number_res_total",
+                           "max":  null,
+                           "min":  0,
+                           "name":  "totalAmount",
+                           "onlyInt":  false,
+                           "presentable":  false,
+                           "required":  false,
+                           "system":  false,
+                           "type":  "number"
+                       }
+                   ],
+        "indexes":  [
+                        "CREATE INDEX `idx_reservations_unit_time` ON `reservations` (`unit`, `startAt`, `endAt`)"
+                    ],
+        "created":  "2026-09-27 04:00:13.493Z",
+        "updated":  "2026-10-06 06:56:05.821Z",
+        "system":  false
+    }
+]

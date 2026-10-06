@@ -1,13 +1,33 @@
 import 'package:pocketbase/pocketbase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import '../config/app_config.dart';
 import '../logic/reservation_workflow.dart';
 import '../models/reservation.dart';
 import '../models/stay_type.dart';
 import '../models/unit.dart';
 
 class PocketBaseService {
-  // 127.0.0.1 is the local loopback address for Windows desktop testing.
-  static final pb = PocketBase('http://127.0.0.1:8090');
+  /// The PocketBase client. The address comes from `AppConfig` (local
+  /// 127.0.0.1:8090 by default, or `--dart-define=POCKETBASE_URL=...`).
+  /// `init()` swaps in a client that remembers the login.
+  static PocketBase pb = PocketBase(AppConfig.pocketBaseUrl);
+
+  /// Call once before `runApp`: restores the saved login (if any) and keeps
+  /// saving it, so a page reload does not sign the user out.
+  static Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    pb = PocketBase(
+      AppConfig.pocketBaseUrl,
+      authStore: AsyncAuthStore(
+        save: (data) async => prefs.setString(_authKey, data),
+        initial: prefs.getString(_authKey),
+        clear: () async => prefs.remove(_authKey),
+      ),
+    );
+  }
+
+  static const _authKey = 'resortbook_pb_auth';
 
   /// Relations loaded with every reservation (unit + its type, stay type).
   static const String reservationExpand = 'unit,unit.unitType,stayType';
