@@ -87,7 +87,7 @@ The tests cover the booking, calendar, statistics, configuration and workflow ru
 
 ## Screenshots
 
-Screenshots of the running app with the demo data. The original Figma wireframes are in [docs/02-mockup.md](docs/02-mockup.md).
+Screenshots of the current app (signed in as a demo user) with made-up demo data, captured at 1366 px (desktop) and 375 px (phone) widths. The original Figma wireframes are in [docs/02-mockup.md](docs/02-mockup.md).
 
 ### Desktop (1024 px and wider)
 
@@ -102,6 +102,8 @@ Screenshots of the running app with the demo data. The original Figma wireframes
 | ![Desktop units](docs/assets/App%20Screenshots/desktop-units.png) | ![Desktop stay types](docs/assets/App%20Screenshots/desktop-stay-types.png) |
 | **Rates** | |
 | ![Desktop rates](docs/assets/App%20Screenshots/desktop-rates.png) | |
+| **Sign In** | **Create Account** |
+| ![Desktop sign in](docs/assets/App%20Screenshots/desktop-login.png) | ![Desktop create account](docs/assets/App%20Screenshots/desktop-sign-up.png) |
 
 ### Phone
 
@@ -110,6 +112,8 @@ Screenshots of the running app with the demo data. The original Figma wireframes
 | ![Phone dashboard](docs/assets/App%20Screenshots/mobile-dashboard.jpg) | ![Phone reservation list](docs/assets/App%20Screenshots/mobile-reservation-list.jpg) | ![Phone calendar](docs/assets/App%20Screenshots/mobile-calendar.jpg) | ![Phone add reservation](docs/assets/App%20Screenshots/mobile-add-reservation-1.jpg) | ![Phone add reservation, lower half](docs/assets/App%20Screenshots/mobile-add-reservation-2.jpg) |
 | **Manage Resort** | **Unit Types** | **Units** | **Stay Types** | **Rates** |
 | ![Phone Manage Resort](docs/assets/App%20Screenshots/mobile-manage-resort.jpg) | ![Phone unit types](docs/assets/App%20Screenshots/mobile-unit-types.jpg) | ![Phone units](docs/assets/App%20Screenshots/mobile-units.jpg) | ![Phone stay types](docs/assets/App%20Screenshots/mobile-stay-types.jpg) | ![Phone rates](docs/assets/App%20Screenshots/mobile-rates.jpg) |
+| **Sign In** | **Create Account** | | | |
+| ![Phone sign in](docs/assets/App%20Screenshots/mobile-login.jpg) | ![Phone create account](docs/assets/App%20Screenshots/mobile-sign-up.jpg) | | | |
 
 ## Web build and deployment
 
