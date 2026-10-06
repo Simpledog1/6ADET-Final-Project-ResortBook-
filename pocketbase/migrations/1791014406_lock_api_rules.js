@@ -5,7 +5,7 @@
 //   * unit_types, units, stay_types, rates, reservations: any authenticated
 //     user can list / view / create / update; reservations are never
 //     deleted by the app, so delete is superuser-only (rule = null).
-//   * users: public registration is switched off (createRule = null), so
+//   * users: registration starts closed (createRule = null); the next migration, 1791014407, opens self sign-up. Originally:
 //     accounts can only be made by a PocketBase superuser in the admin UI.
 //     Users can read their own record and nothing else.
 // A null rule means "superusers only"; "" would mean "everyone".

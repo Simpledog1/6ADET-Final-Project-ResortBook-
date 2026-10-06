@@ -3,7 +3,7 @@
         "id":  "_pb_users_auth_",
         "listRule":  "id = @request.auth.id",
         "viewRule":  "id = @request.auth.id",
-        "createRule":  null,
+        "createRule":  "@request.body.verified:isset = false",
         "updateRule":  null,
         "deleteRule":  null,
         "name":  "users",
@@ -153,7 +153,7 @@
                         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != \u0027\u0027"
                     ],
         "created":  "2026-09-27 03:49:45.916Z",
-        "updated":  "2026-10-06 06:56:05.828Z",
+        "updated":  "2026-10-06 08:08:15.622Z",
         "system":  false,
         "authRule":  "",
         "manageRule":  null,

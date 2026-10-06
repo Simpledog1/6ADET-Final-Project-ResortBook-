@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/login_screen.dart';
+import '../screens/sign_up_screen.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import 'app_shell.dart';
@@ -47,6 +48,8 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   bool _checking = true;
   bool _signedIn = false;
+  bool _showSignUp = false;
+  String? _notice;
 
   @override
   void initState() {
@@ -75,7 +78,11 @@ class _AuthGateState extends State<AuthGate> {
     if (!mounted) return;
     // Close any screens opened on top of the app before showing Login.
     Navigator.of(context).popUntil((route) => route.isFirst);
-    setState(() => _signedIn = false);
+    setState(() {
+      _signedIn = false;
+      _showSignUp = false;
+      _notice = null;
+    });
   }
 
   @override
@@ -87,9 +94,27 @@ class _AuthGateState extends State<AuthGate> {
       );
     }
     if (!_signedIn) {
+      if (_showSignUp) {
+        return SignUpScreen(
+          auth: widget.auth,
+          onBackToLogin: () => setState(() => _showSignUp = false),
+          onAccountCreated: () => setState(() {
+            _showSignUp = false;
+            _notice = 'Your account was created. You can now log in.';
+          }),
+        );
+      }
       return LoginScreen(
         auth: widget.auth,
-        onSignedIn: () => setState(() => _signedIn = true),
+        notice: _notice,
+        onCreateAccount: () => setState(() {
+          _showSignUp = true;
+          _notice = null;
+        }),
+        onSignedIn: () => setState(() {
+          _signedIn = true;
+          _notice = null;
+        }),
       );
     }
     return AuthScope(

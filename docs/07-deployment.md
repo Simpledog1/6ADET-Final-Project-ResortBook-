@@ -20,6 +20,7 @@ Nothing in the repository is a deployed server. Steps 1 and 2 below need **your*
 | `.github/workflows/deploy-web.yml` | Builds the web app with the repository **variable** `POCKETBASE_URL` |
 | `pocketbase/pb_schema.json` | All ResortBook collections **with the locked API rules**, for a fresh PocketBase (Import collections) |
 | `pocketbase/migrations/1791014406_lock_api_rules.js` | Locks the rules on an existing database (the one this project was built on) |
+| `pocketbase/migrations/1791014407_allow_self_signup.js` | Lets people create their own account from the app (`users` create rule) |
 
 ## Step 1. Host PocketBase (manual)
 
@@ -42,8 +43,8 @@ When the server is up you have a URL such as `https://your-name.example.com`. Th
 ## Step 2. Create the schema and the login (manual, once)
 
 1. Open `https://YOUR-POCKETBASE-URL/_/` and create the superuser (the admin). Keep that password to yourself; it never goes into the app or GitHub.
-2. Admin UI > **Settings > Import collections > Load from JSON file** and choose `pocketbase/pb_schema.json`. Review and confirm. This creates `users` (sign-up closed), `unit_types`, `units`, `stay_types`, `rates` and `reservations`, each with the production API rules.
-3. **Collections > users > New record**: create the demo account (email + password). Share only this account with classmates/the professor, or create one per person. There is no sign-up in the app.
+2. Admin UI > **Settings > Import collections > Load from JSON file** and choose `pocketbase/pb_schema.json`. Review and confirm. This creates `users` (self sign-up allowed), `unit_types`, `units`, `stay_types`, `rates` and `reservations`, each with the production API rules.
+3. Create the demo account either with **Create one** on the app's Sign In page, or in the admin UI under **Collections > users > New record**. Anyone with the link can also create an account; to stop that, set the `users` **Create rule** to locked (see `docs/06-security-and-privacy.md`).
 4. Optional: add your demo data (Cottage and Villa unit types, a few units, stay types and rates) through the app's **Manage Resort** after signing in.
 
 PocketBase allows requests from any origin by default, so GitHub Pages can call it without extra CORS setup. (If you restrict origins at your host, allow `https://simpledog1.github.io`.)

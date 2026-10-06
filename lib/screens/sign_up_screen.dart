@@ -1,42 +1,45 @@
 import 'package:flutter/material.dart';
+import '../logic/account_rules.dart';
 import '../services/auth_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../widgets/auth_layout.dart';
 
-/// Sign-in page. [notice] is a success message shown above the form (for
-/// example "Account created") and [onCreateAccount] opens the Sign Up page.
-class LoginScreen extends StatefulWidget {
+/// Create Account page: name, email, password and confirmation. On success
+/// it calls [onAccountCreated]; the user then signs in from the Login page.
+class SignUpScreen extends StatefulWidget {
   final AuthGateway auth;
-  final VoidCallback onSignedIn;
-  final VoidCallback? onCreateAccount;
-  final String? notice;
+  final VoidCallback onAccountCreated;
+  final VoidCallback onBackToLogin;
 
-  const LoginScreen({
+  const SignUpScreen({
     super.key,
     required this.auth,
-    required this.onSignedIn,
-    this.onCreateAccount,
-    this.notice,
+    required this.onAccountCreated,
+    required this.onBackToLogin,
   });
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirm = TextEditingController();
   bool _loading = false;
   bool _hidePassword = true;
   String? _error;
 
   @override
   void dispose() {
+    _name.dispose();
     _email.dispose();
     _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
@@ -47,9 +50,13 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
-      await widget.auth.signIn(_email.text, _password.text);
+      await widget.auth.signUp(
+        name: _name.text.trim(),
+        email: _email.text.trim(),
+        password: _password.text,
+      );
       if (!mounted) return;
-      widget.onSignedIn();
+      widget.onAccountCreated();
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -73,32 +80,38 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Sign in', style: AppText.sectionTitle),
-            if (widget.notice != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              AuthMessage(text: widget.notice!, isError: false),
-            ],
+            const Text('Create account', style: AppText.sectionTitle),
+            const SizedBox(height: AppSpacing.md),
+            TextFormField(
+              controller: _name,
+              enabled: !_loading,
+              textInputAction: TextInputAction.next,
+              textCapitalization: TextCapitalization.words,
+              autofillHints: const [AutofillHints.name],
+              decoration: const InputDecoration(labelText: 'Name'),
+              validator: AccountRules.validateName,
+            ),
             const SizedBox(height: AppSpacing.md),
             TextFormField(
               controller: _email,
               enabled: !_loading,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              autofillHints: const [AutofillHints.username],
+              autofillHints: const [AutofillHints.email],
               decoration: const InputDecoration(labelText: 'Email'),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Enter your email' : null,
+              validator: AccountRules.validateEmail,
             ),
             const SizedBox(height: AppSpacing.md),
             TextFormField(
               controller: _password,
               enabled: !_loading,
               obscureText: _hidePassword,
-              textInputAction: TextInputAction.done,
-              autofillHints: const [AutofillHints.password],
-              onFieldSubmitted: (_) => _submit(),
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
                 labelText: 'Password',
+                helperText:
+                    'At least ${AccountRules.minPasswordLength} characters',
                 suffixIcon: IconButton(
                   tooltip: _hidePassword ? 'Show password' : 'Hide password',
                   icon: Icon(
@@ -110,8 +123,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       setState(() => _hidePassword = !_hidePassword),
                 ),
               ),
+              validator: AccountRules.validatePassword,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextFormField(
+              controller: _confirm,
+              enabled: !_loading,
+              obscureText: _hidePassword,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _submit(),
+              decoration: const InputDecoration(labelText: 'Confirm password'),
               validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Enter your password' : null,
+                  AccountRules.validateConfirmPassword(_password.text, v),
             ),
             if (_error != null) ...[
               const SizedBox(height: AppSpacing.md),
@@ -124,28 +147,26 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _loading ? null : _submit,
                 child: _loading
                     ? const AuthButtonSpinner()
-                    : const Text('Sign In'),
+                    : const Text('Create Account'),
               ),
             ),
-            if (widget.onCreateAccount != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              Center(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    const Text(
-                      "Don't have an account?",
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                    TextButton(
-                      onPressed: _loading ? null : widget.onCreateAccount,
-                      child: const Text('Create one'),
-                    ),
-                  ],
-                ),
+            const SizedBox(height: AppSpacing.md),
+            Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const Text(
+                    'Already have an account?',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  TextButton(
+                    onPressed: _loading ? null : widget.onBackToLogin,
+                    child: const Text('Log in'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),

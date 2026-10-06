@@ -14,6 +14,15 @@ abstract class AuthGateway {
   /// credentials are wrong or the server can't be reached.
   Future<void> signIn(String email, String password);
 
+  /// Creates a new account (does not sign in). Throws [AuthException] with a
+  /// user-facing message when the email is taken, the password is rejected or
+  /// the server can't be reached.
+  Future<void> signUp({
+    required String name,
+    required String email,
+    required String password,
+  });
+
   /// Ends the session (clears the stored login).
   Future<void> signOut();
 
@@ -53,6 +62,52 @@ class PocketBaseAuthGateway implements AuthGateway {
     } on ClientException catch (e) {
       if (e.statusCode == 400 || e.statusCode == 401 || e.statusCode == 403) {
         throw const AuthException('Incorrect email or password.');
+      }
+      throw const AuthException(
+        'Cannot reach the ResortBook server. Check your connection and try again.',
+      );
+    }
+  }
+
+  @override
+  Future<void> signUp({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // PocketBase hashes the password; the app never stores it.
+      await PocketBaseService.pb
+          .collection('users')
+          .create(
+            body: {
+              'name': name.trim(),
+              'email': email.trim(),
+              'password': password,
+              'passwordConfirm': password,
+            },
+          );
+    } on ClientException catch (e) {
+      final fields = e.response['data'];
+      if (fields is Map && fields['email'] != null) {
+        throw const AuthException(
+          'An account with this email already exists, or the email is not valid.',
+        );
+      }
+      if (fields is Map && fields['password'] != null) {
+        throw const AuthException(
+          'That password was not accepted. Use at least 8 characters.',
+        );
+      }
+      if (e.statusCode == 403) {
+        throw const AuthException(
+          'Creating accounts is not allowed on this server.',
+        );
+      }
+      if (e.statusCode == 400) {
+        throw const AuthException(
+          'The account could not be created. Check your details and try again.',
+        );
       }
       throw const AuthException(
         'Cannot reach the ResortBook server. Check your connection and try again.',

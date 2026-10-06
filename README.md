@@ -58,7 +58,7 @@ Front-desk staff and managers of small-to-medium resorts. It is an internal staf
    ./pocketbase serve
    ```
    The migrations run automatically on start and create/update the `unit_types`, `units`, `stay_types`, `rates` and `reservations` collections and **lock the API rules to signed-in users**. Create a superuser when prompted (admin UI: http://127.0.0.1:8090/_/).
-4. Create a login: admin UI > Collections > `users` > New record (email + password). The app has no sign-up screen and the API refuses public registration.
+4. Create a login: either use **Create one** on the app's Sign In page, or add a user in the admin UI (Collections > `users` > New record).
 5. By default the app uses `http://127.0.0.1:8090`. The address is read in one place, `lib/config/app_config.dart`; override it at run/build time with `--dart-define=POCKETBASE_URL=...` (see below).
 
 > **Fresh PocketBase install:** import `pocketbase/pb_schema.json` instead (admin UI > Settings > Import collections). It contains every collection with the production API rules. The migrations below only apply to this project's existing database.
@@ -125,7 +125,7 @@ Local PocketBase  http://127.0.0.1:8090         GitHub Pages (Flutter web)
 ```
 
 - **Web viewport:** the release web build shows ResortBook directly in the whole browser window (DevicePreview is debug-only and never enabled on web). Below 600 px you get the phone layout, 600-1023 px the tablet layout, from 1024 px the desktop sidebar layout.
-- **Login:** the app opens on a Sign In page. Accounts are created by the PocketBase admin; there is **no public registration**. The session is saved in the browser, so a reload keeps you signed in until you use **Sign out**.
+- **Login and sign-up:** the app opens on a Sign In page with a **Create one** link to a Create Account page (name, email, password, confirm password). After creating an account you return to Sign In and log in. The session is saved in the browser, so a reload keeps you signed in until you use **Sign out**.
 - **API rules:** the data is protected by PocketBase itself, not just the UI: without a login the API returns no data and rejects writes (see [Security and privacy](docs/06-security-and-privacy.md)).
 - **Configuration:** the PocketBase address is `POCKETBASE_URL` (a build-time `--dart-define`, default `http://127.0.0.1:8090`; the GitHub workflow takes it from the repository variable `POCKETBASE_URL`). It is not a secret. Never commit the PocketBase admin password, `pb_data/`, or `.env` files.
 - **Hosting PocketBase publicly** is a manual step that needs your own hosting account: see [docs/07-deployment.md](docs/07-deployment.md). Until a public PocketBase URL is configured, the hosted web build cannot reach any server.
