@@ -1,5 +1,18 @@
 # Demo video
 
+> **Status (October 2026): not recorded yet.** There is no `demo.mp4` in this folder. The rest of this page is the template, and the shot list below is a plan, not a description of an existing video.
+
+## Planned shot list
+
+1. What ResortBook is and who it is for (front-desk staff of a small resort).
+2. Sign in, then the dashboard on desktop and on a phone-width window.
+3. Manage Resort: show a unit type, a unit, a stay type and a rate.
+4. Add a reservation step by step, and show the price.
+5. Try to add an overlapping reservation and show the **Date Conflict Detected** message.
+6. Reservation List, Reservation Details, then Check In, Complete, Cancel and Restore.
+7. Calendar.
+8. Say honestly what is not done: the double-booking check is only in the app (see [09](09-reservations-and-data-integrity.md)).
+
 **File:** `demo.mp4` in this folder, or the hosted link (see below)
 **Length:** aim for 3 to 5 minutes
 **Recorded on:** the device you used

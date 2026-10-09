@@ -1,5 +1,7 @@
 # Design system
 
+> **Status (October 2026):** the image and the tables below describe the **planned** design system from September. The colours, type and the 8-based spacing were followed. The component table lists planned file names, and many of them were never created. The table "What was actually built" below shows the real files. The image and PDF are a Figma export, not a screenshot of the app.
+
 The ResortBook design system defines the visual and interaction standards used throughout the application. It is designed for consistent use across both mobile and desktop layouts.
 
 ![Design system](assets/Design%20System/ResortBook_Design_System.png)
@@ -52,6 +54,25 @@ PDF version: [ResortBook_Design_System.pdf](assets/Design%20System/ResortBook_De
 | Bottom Navigation Bar | `bottom_navigation.dart` | Selected tab, navigation callback                                          | Dashboard, Calendar, Room Management, Reservation List |
 | App Bar               | `app_bar.dart`           | Screen title, navigation actions                                           | All Screens                                            |
 | Empty State           | `empty_state.dart`       | Icon, message, optional action                                             | Reservation List, Calendar                             |
+
+### What was actually built (added October 2026)
+
+| Planned component | Actual implementation |
+| --- | --- |
+| Reservation Card (`reservation_card.dart`) | `lib/widgets/reservation_cards.dart` (upcoming, list and calendar card variants) |
+| Room Card (`room_card.dart`) | **Not built.** There is no room card; units appear in the Manage Resort lists and tables. |
+| Primary Button (`primary_button.dart`) | **Not built as a widget.** The themed Material `FilledButton` is used (`lib/theme/app_theme.dart`). |
+| Text Input Field (`text_input_field.dart`) | `lib/widgets/app_inputs.dart` (shared input style, field label, picker field) |
+| Date Picker Field (`date_picker_field.dart`) | `PickerField` in `app_inputs.dart` with Flutter's date picker, used in Add Reservation |
+| Conflict Alert Banner (`conflict_alert.dart`) | Built inside `lib/screens/add_reservation_screen.dart` ("Date Conflict Detected") |
+| Status Badge (`status_badge.dart`) | `lib/widgets/status_badge.dart` |
+| Calendar Widget (`calendar_widget.dart`) | **Not built as a widget.** `lib/screens/calendar_screen.dart` with `lib/logic/calendar_logic.dart` |
+| Search Bar (`search_bar.dart`) | `SearchField` in `lib/widgets/filter_controls.dart` |
+| Bottom Navigation Bar (`bottom_navigation.dart`) | **Not built.** Phone uses a dashboard hub with back arrows; desktop uses a top bar and sidebar (`lib/widgets/app_shell.dart`). |
+| App Bar (`app_bar.dart`) | `lib/widgets/app_header.dart` (phone) and the top bar in `app_shell.dart` (desktop) |
+| Empty State (`empty_state.dart`) | `EmptyStateCard` and `ActionEmptyCard` (`reservation_cards.dart`, `state_cards.dart`) |
+
+Differences between this document and the code, which I have not changed: button height is **56 px** in code (`AppSpacing.buttonHeight`) but 48 px in the spacing table above, and the phone design was drawn for 393 px wide but is checked at 375 px.
 
 ## Responsive layout rules
 

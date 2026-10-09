@@ -1,5 +1,7 @@
 # Mockup and wireframes
 
+> **These images are design mockups made in Figma. They are not screenshots of the running app.** Screenshots of the running app are in the [README](../README.md#screenshots). The mockups show the original five-screen plan; the finished app also has Manage Resort and sign-in screens that were not mocked up, and some details (for example the room wording) changed. See [10-testing-and-verification.md](10-testing-and-verification.md#screenshots-what-is-what).
+
 The visual plan for ResortBook. The wireframes show the structure and navigation of the application, while the mockups show the final visual design of each screen.
 
 ## Mockup

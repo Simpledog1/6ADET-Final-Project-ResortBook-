@@ -30,6 +30,14 @@ Front-desk staff and managers of small-to-medium resorts. It is an internal staf
 - **Calendar** — month view showing a booking on every day its time window touches (including Night Tours that cross midnight); desktop adds booking bars, "+N more" and a side panel for the selected day.
 - **Dashboard** — on desktop: reservations this month, staying now, arriving in the next 7 days, units occupied now, upcoming and recently added bookings, quick actions and a setup warning when the configuration has gaps.
 
+## Project status
+
+| Status | What |
+| --- | --- |
+| **Implemented and checked** | Sign in and sign up; Dashboard; Reservation List; Reservation Details; Calendar; Add and Edit Reservation with the overlap check, capacity check and pricing; Manage Resort (unit types, units, stay types, rates); phone and desktop layouts. How each was checked (run in the browser, or automated test only) is in [docs/10-testing-and-verification.md](docs/10-testing-and-verification.md). |
+| **Written but not finished or not verified** | Tablet layout (600–1023 px): it is in the code, but I have not looked at it at that width and no test covers it. Online demo: the web build is published, but it only shows data if a public PocketBase is configured ([docs/07-deployment.md](docs/07-deployment.md)); server-side overlap check: written and tried on a scratch copy, **not enabled** in any real PocketBase ([docs/09](docs/09-reservations-and-data-integrity.md)); the Windows desktop build was not re-run for these docs; the demo video is not recorded yet. |
+| **Planned or out of scope** | PDF booking receipts, real-time multi-device sync, payments, notifications, a guest-facing booking site. |
+
 ## Built with
 
 | | |
@@ -44,32 +52,39 @@ Front-desk staff and managers of small-to-medium resorts. It is an internal staf
 | Width | Layout |
 | --- | --- |
 | Phone (< 600 px) | Mobile screens with a dashboard hub and back navigation |
-| Tablet (600–1023 px) | The same screens, centred at a comfortable width |
+| Tablet (600–1023 px) | The same screens, centred at a comfortable width (in the code; **not verified** at this width) |
 | Desktop (≥ 1024 px) | Navy top bar, sidebar navigation and wide desktop layouts |
 
 ## Running it yourself
 
+**Tested with:** Flutter 3.47.5 (stable) and Dart 3.13.4 (the project requires Dart `^3.8.0`), PocketBase 0.40.4, on Windows 10 (64-bit AMD/Intel). Other versions and operating systems are untested. Full setup, the exact collection fields and a troubleshooting table (network failures, wrong PocketBase download, locked files) are in [docs/08-setup-and-troubleshooting.md](docs/08-setup-and-troubleshooting.md).
+
+```bash
+git clone https://github.com/Simpledog1/6ADET-Final-Project-ResortBook-.git
+cd 6ADET-Final-Project-ResortBook-
+flutter pub get
+```
+
+For the Windows desktop target you also need Visual Studio 2022 with the **Desktop development with C++** workload. The web version only needs Chrome.
+
 ### 1. PocketBase
 
-1. Download PocketBase **v0.40.4** for your OS from the [PocketBase releases](https://github.com/pocketbase/pocketbase/releases) and extract it.
-2. Copy the files in this repo's `pocketbase/migrations/` folder into a `pb_migrations/` folder next to the PocketBase executable.
-3. Start it:
+1. Download PocketBase **v0.40.4** for your operating system **and processor type** from the [PocketBase releases](https://github.com/pocketbase/pocketbase/releases) and extract it. On Windows, `$env:PROCESSOR_ARCHITECTURE` printing `AMD64` means you need the `windows_amd64` file; `ARM64` means `windows_arm64`. On Linux or macOS use `uname -m`. A wrong build will not start.
+2. Start it from its own folder (outside this project):
    ```bash
-   ./pocketbase serve
+   ./pocketbase serve        # Windows: .\pocketbase.exe serve
    ```
-   The migrations run automatically on start and create/update the `unit_types`, `units`, `stay_types`, `rates` and `reservations` collections and **lock the API rules to signed-in users**. Create a superuser when prompted (admin UI: http://127.0.0.1:8090/_/).
+   Create the superuser when asked (admin UI: http://127.0.0.1:8090/_/).
+3. Create the collections. On a **new, empty PocketBase**, import `pocketbase/pb_schema.json` (admin UI > Settings > Import collections > Load from JSON file). It creates `users`, `unit_types`, `units`, `stay_types`, `rates` and `reservations` with all fields and the API rules (signed-in users only). The field list is in [docs/08](docs/08-setup-and-troubleshooting.md#required-collections-and-fields).
 4. Create a login: either use **Create one** on the app's Sign In page, or add a user in the admin UI (Collections > `users` > New record).
 5. By default the app uses `http://127.0.0.1:8090`. The address is read in one place, `lib/config/app_config.dart`; override it at run/build time with `--dart-define=POCKETBASE_URL=...` (see below).
 
-> **Fresh PocketBase install:** import `pocketbase/pb_schema.json` instead (admin UI > Settings > Import collections). It contains every collection with the production API rules. The migrations below only apply to this project's existing database.
->
-> The migrations upgrade this project's original `rooms` and `reservations` collections (they look them up by their collection IDs, rename `rooms` to `units` and keep existing bookings). They are meant for this project's existing database; on a completely fresh PocketBase install they won't apply as-is, and the collections would need to be created to match the fields shown in the migration files.
+> **The files in `pocketbase/migrations/` are only for my existing database.** They upgrade the original `rooms` and `reservations` collections by their internal ids (rename `rooms` to `units`, keep existing bookings), so they do not work on a fresh install. Use `pb_schema.json` there.
 
 ### 2. Flutter app
 
 ```bash
-flutter pub get
-flutter run -d windows    # or: flutter run -d chrome / an emulator
+flutter run -d windows    # or: flutter run -d chrome / an emulator (emulators are untested)
 ```
 
 Sign in with the user you created in PocketBase. To use a different server (for example the public one): `flutter run -d chrome --dart-define=POCKETBASE_URL=https://your-pocketbase.example.com`.
@@ -83,11 +98,17 @@ flutter analyze
 flutter test
 ```
 
-The tests cover the booking, calendar, statistics, configuration and workflow rules, plus widget tests for the main screens (they use a fake data source, so no server is needed).
+On 2026-10-09: `flutter analyze` reports no issues and `flutter test` passes all 276 tests. The tests cover the booking, calendar, statistics, configuration and workflow rules, sign-in and sign-up, the overlap boundaries, and a check that the field names the models read and the fields `createReservation` writes exist in `pocketbase/pb_schema.json` (other save and update code is not covered by that check), plus widget tests for the main screens. They use a fake data source, so no server is needed, which also means **no test talks to a real PocketBase**. What they do not cover, and what I checked by hand, is listed in [docs/10-testing-and-verification.md](docs/10-testing-and-verification.md).
 
 ## Screenshots
 
-Screenshots of the current app (signed in as a demo user) with made-up demo data, captured at 1366 px (desktop) and 375 px (phone) widths. The original Figma wireframes are in [docs/02-mockup.md](docs/02-mockup.md).
+Screenshots of the current app (signed in as a demo user) with made-up demo data, captured at 1366 px (desktop) and 375 px (phone) widths. These are screenshots of the **running app**. The Figma wireframes and mockups are design drawings, not the app; they are in [docs/02-mockup.md](docs/02-mockup.md).
+
+**Overlap check:** adding a reservation that overlaps an existing one is blocked with a "Date Conflict Detected" message. Here Cottage A, Overnight, Nov 11 to Nov 12, 2026 overlaps an existing booking from Nov 10 to Nov 12.
+
+| Desktop | Phone |
+| --- | --- |
+| ![Desktop: overlapping reservation blocked](docs/assets/App%20Screenshots/desktop-add-reservation-conflict.png) | ![Phone: overlapping reservation blocked](docs/assets/App%20Screenshots/mobile-add-reservation-conflict.jpg) |
 
 ### Desktop (1024 px and wider)
 
@@ -137,7 +158,8 @@ Local PocketBase  http://127.0.0.1:8090         GitHub Pages (Flutter web)
 ## Known limitations
 
 - Simple authentication only: one shared kind of account (no roles or password reset); accounts are managed in the PocketBase admin UI. Every signed-in user can change all data.
-- If two people edit the same reservation at the same time, the last save wins. The overlap check happens just before saving, so two simultaneous bookings for the same slot are theoretically possible.
+- **The double-booking check runs only in the Flutter app.** PocketBase does not check it: I confirmed on a copy of the database that an overlapping reservation sent directly to the API is accepted, and two people saving the same slot at the same moment are not protected. A server-side hook is written and tried out on a scratch copy but is **not enabled** ([docs/09](docs/09-reservations-and-data-integrity.md)).
+- If two people edit the same reservation at the same time, the last save wins.
 - Completing a stay early doesn't shorten the booked time window; the unit stays blocked until the booked end time.
 - No payments, notifications, housekeeping or guest-facing online booking (out of scope).
 
@@ -152,6 +174,9 @@ Local PocketBase  http://127.0.0.1:8090         GitHub Pages (Flutter web)
 | [Demo video](docs/05-demo-video.md) | the recording and what it shows |
 | [Deployment guide](docs/07-deployment.md) | hosting PocketBase publicly and publishing the web build |
 | [Security and privacy](docs/06-security-and-privacy.md) | what is stored and how it is protected |
+| [Setup and troubleshooting](docs/08-setup-and-troubleshooting.md) | versions, installing, exact collections and fields, fixing failed setups |
+| [Reservations and data integrity](docs/09-reservations-and-data-integrity.md) | how a reservation is made, the overlap rule and edge cases, client vs server validation, test checklist |
+| [Testing and verification](docs/10-testing-and-verification.md) | test results, what was checked live and what was not, screenshot inventory |
 | [Code overview](lib/README.md) | how the `lib/` folder is organised |
 
 ## AI use

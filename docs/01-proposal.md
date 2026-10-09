@@ -1,5 +1,7 @@
 # Proposal
 
+> **Status note (October 2026):** this is the original plan from September, kept as written so the decisions can be traced. The app grew beyond it. The section "Where the project stands now" at the end says what changed, and the README describes the current app. Where the two disagree, the README is right.
+
 ## The problem, in one sentence
 
 Small-to-medium independent resorts struggle to manage room inventory, guest records, and reservations accurately, often relying on error-prone paper logbooks or disjointed spreadsheets that can lead to double-bookings and operational friction.
@@ -124,3 +126,16 @@ A one-hour technical spike was completed using PocketBase. The backend was run l
 **September 20, 2026 — Risks narrowed:** The previous concern about general state management and concurrent booking was narrowed into two concrete implementation risks: PocketBase/backend integration and date-range overlap validation. This change reflects the experience gained from building the earlier Flutter modules and makes the remaining risks easier to test and address.
 
 **September 20, 2026 — PDF export added as a stretch goal:** A PDF booking receipt/confirmation feature using the `pdf` and `printing` packages was identified as an additional feature to attempt if time allows. It is not required for the core reservation workflow.
+
+## Where the project stands now (added October 9, 2026)
+
+| Proposal said | Current app |
+| --- | --- |
+| Five screens: Dashboard, Add Reservation, Reservation List, Reservation Details, Calendar | **All five are built.** Added later: **Manage Resort** (unit types, units, stay types, rates) and a **sign-in / create-account** page. |
+| "No separate Room Management screen" | Changed in Week 3. Because stays and prices had to be owner-configurable, the app now has Manage Resort. Rooms became **units** with **unit types**, and stay types and rates were added. |
+| `rooms` collection with `roomNumber`, `type`, `maxCapacity`, `pricePerNight`, `cleaningStatus`, and `reservations` with `checkInDate`, `checkOutDate`, `assignedRoomId` | Now `unit_types`, `units`, `stay_types`, `rates` and `reservations` (with `startAt`, `endAt`, `unit`, `stayType`, `status` and saved price fields), plus PocketBase's `users`. Exact fields: [08-setup-and-troubleshooting.md](08-setup-and-troubleshooting.md#required-collections-and-fields). The old `rooms` fields `type`, `pricePerNight` and `cleaningStatus` still exist on `units` but the app mostly no longer uses them. |
+| Calendar with `TableCalendar` or a custom layout | A **custom** calendar. No calendar package is used. |
+| Overlap validation helper, target October 5 | Done (Week 2, date and time based, covered by unit tests). It runs **only in the app**; PocketBase does not enforce it ([09-reservations-and-data-integrity.md](09-reservations-and-data-integrity.md)). |
+| Backend integration risk, target October 1 | Done. PocketBase runs locally for development. A public PocketBase for the online demo is described in [07-deployment.md](07-deployment.md) and is **not verified** here. |
+| Out of scope: real-time sync, live chat, notifications, guest accounts and payments, PDF receipts | Still out of scope. Real-time sync and PDF receipts remain stretch goals and are **not built**. (Staff accounts for signing in were added; guest accounts were not.) |
+| Mobile and desktop | Both are supported (phone, tablet and desktop layouts). The Week 1 report says "mobile-only" for a few days, but that was reversed in Week 2. |

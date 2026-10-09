@@ -13,6 +13,10 @@ folder is half of what gets read.
 | [04-weekly-reports.md](04-weekly-reports.md) | one short entry per week, added as you go |
 | [05-demo-video.md](05-demo-video.md) | the recording and what it shows |
 | [06-security-and-privacy.md](06-security-and-privacy.md) | the checklist, filled in and dated |
+| [07-deployment.md](07-deployment.md) | hosting PocketBase and publishing the web build |
+| [08-setup-and-troubleshooting.md](08-setup-and-troubleshooting.md) | versions, setup, exact collections and fields, troubleshooting |
+| [09-reservations-and-data-integrity.md](09-reservations-and-data-integrity.md) | reservation steps, overlap rule, edge cases, server-side validation |
+| [10-testing-and-verification.md](10-testing-and-verification.md) | test results, what was verified, screenshot inventory |
 | `assets/` | screenshots, wireframe photos, diagrams |
 
 Two rules:

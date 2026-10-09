@@ -6,9 +6,10 @@ Setup, features and limitations are in the [project README](../README.md). This 
 
 | Folder | What is in it |
 | --- | --- |
-| `main.dart` | App entry point. Wraps the app in `DevicePreview` in debug runs only (phone frames and screenshots); release builds show the app directly. |
+| `main.dart` | App entry point. Wraps the app in `DevicePreview` in debug runs on desktop only (phone frames and screenshots); release builds and the web version show the app directly. The home screen is `AuthGate` (sign in, then the app). |
+| `config/` | `app_config.dart`: the PocketBase address (`POCKETBASE_URL`, default `http://127.0.0.1:8090`). |
 | `models/` | Data classes mapped from PocketBase records: `Reservation`, `Unit`, `UnitType`, `StayType`, `Rate`. |
-| `services/` | `PocketBaseService` (reservations), `ConfigService` (unit types, units, stay types, rates, delete guards, friendly error messages) and `ReservationGateway`, a thin wrapper the reservation screens use so widget tests can swap in a fake. |
+| `services/` | `PocketBaseService` (reservations), `ConfigService` (unit types, units, stay types, rates, delete guards, friendly error messages) and `ReservationGateway`, a thin wrapper the reservation screens use so widget tests can swap in a fake, and `AuthGateway` for sign in and sign up. |
 | `logic/` | Pure Dart rules with unit tests: `booking_logic` (stay windows, overlaps, pricing, capacity), `calendar_logic` (which bookings show on which day), `reservation_stats` (dashboard numbers, sorting, pages), `reservation_workflow` (statuses, editing, restore), `config_rules` (Manage Resort validation and setup checklist). |
 | `screens/` | Dashboard, Reservation List, Reservation Details, Add/Edit Reservation, Calendar, and `manage/` for Manage Resort (unit types, units, stay types, rates). |
 | `widgets/` | Shared UI: the desktop shell and page frame, cards, tables, filters, badges, dialogs and form inputs. |
