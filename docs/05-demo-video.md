@@ -1,10 +1,9 @@
 # Demo video
 
-> **Status (9 October 2026): recorded, compressed, ready to upload, not uploaded yet.**
+> **Status (10 October 2026): uploaded.** Watch it on YouTube: [ResortBook — Project Demonstration](https://youtu.be/Ao-AUKQQsLo) (5 min 51 s).
 >
-> - **Original:** `ResortBook_Demo_Video.mp4`, 5 min 51 s, 1920 × 1080 at 30 fps, 538 MB. Kept locally, ignored by Git (over GitHub's 100 MB limit).
-> - **Compressed:** `ResortBook_Demo_Video_Compressed.mp4`, 9.7 MB, 1280 × 720 at 30 fps, same length and frame count. Made with `ffmpeg -i ResortBook_Demo_Video.mp4 -map 0:v:0 -map 0:a:0 -c:v libx264 -crf 28 -preset slow -vf "scale=-2:720" -c:a aac -b:a 96k -movflags +faststart ResortBook_Demo_Video_Compressed.mp4`. Checked: no decode errors, audio present in the beginning, middle and end, and UI text readable in frames from each part.
-> - **Not committed:** the recording shows my webcam, so it will be hosted as an unlisted video or a GitHub Release attachment, and the link will go in the [README](../README.md#video-demonstration).
+> - The uploaded file is the compressed version: 1280 × 720 at 30 fps, H.264 video with AAC audio at 96 kbps, 9.7 MB. Before uploading I checked it had no decode errors, audio in the beginning, middle and end, and readable UI text in frames from each part.
+> - The video file itself is not committed to this repository, because it shows my webcam. It is only on YouTube.
 >
 > The shot list below is the plan I made before recording. I have not checked it against the final recording, and the rest of this page is the course template.
 
