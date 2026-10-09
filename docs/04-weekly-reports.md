@@ -117,6 +117,8 @@
 
 ## Week 3: Finals, October 5, 2026
 
+*A more detailed version of this week, built from the Git history, is in [journal/week-3.md](../journal/week-3.md).*
+
 ### What changed this week
 
 * Completed the remaining core ResortBook screens, including the Reservation List, Reservation Details, and Calendar.
@@ -129,7 +131,7 @@
 * Implemented reservation management workflows for Reserved, Checked In, Completed, and Cancelled statuses, including editing, cancelling, restoring, and availability checks.
 * Added reservation pagination, sorting, search, status indicators, calendar visualization, dashboard statistics, and synchronized updates between reservation screens.
 * Completed final QA and release-readiness improvements, including friendly error messages, responsive layout testing, cleanup of obsolete code, updated documentation, and additional automated tests.
-* Successfully completed the final automated test suite with **184 tests passing** and `flutter analyze` reporting **no issues**. (On October 9, 2026 the suite has 276 tests, all passing. It grew with the sign-in, sign-up, boundary and schema tests, see `docs/10-testing-and-verification.md`.)
+* Successfully completed the final automated test suite with **184 tests passing** and `flutter analyze` reporting **no issues**. (When I re-ran the old commits on October 9, 184 tests passed at the October 4 QA commit `6ed818e`, and **235** passed at the end of this week (`0bb7a48`, `f377c5a`) after the configurable-stays work. On October 9, 2026 the suite has 276 tests, all passing. It grew with the sign-in, sign-up, boundary and schema tests, see `docs/10-testing-and-verification.md`.)
 
 ### Why
 
@@ -173,6 +175,66 @@
 * Verify the final mobile and desktop layouts.
 * Review the GitHub repository for unnecessary files and unfinished documentation.
 * Complete the final project submission.
+
+## Week 4: Finals, October 9, 2026
+
+*A day-by-day version of this week is in [journal/week-4.md](../journal/week-4.md).*
+
+### What changed this week
+
+* Added **sign-in** with email and password, **sign-out**, and **session restore**, so a page reload keeps the user signed in.
+* Added a **Create Account** page (name, email, password, confirm password) with validation, and changed the PocketBase `users` rule so people can sign up themselves.
+* **Locked the PocketBase API rules** so only signed-in users can read or change unit types, units, stay types, rates and reservations. Reservations cannot be deleted through the API.
+* Made the PocketBase address a single build setting, `POCKETBASE_URL`. It is local by default, and the GitHub Pages build reads it from a repository variable. I also exported the full schema to `pocketbase/pb_schema.json` so a new PocketBase can import it.
+* Compared free hosting options and set up the online database on **PocketBase Cloud**. I connected the GitHub Pages version to it.
+* Replaced the README screenshots with the current app at desktop and phone width, using made-up guests only.
+* Worked through the m8a1 to m8a6 documentation feedback:
+  * a setup and troubleshooting guide with the exact Flutter, Dart and PocketBase versions and collection fields;
+  * a page on the reservation workflow, the overlap rule and its edge cases;
+  * a testing and verification page;
+  * two real "Date Conflict Detected" screenshots;
+  * 11 overlap boundary tests and a schema/model test;
+  * reflections added to these reports.
+* Added demo data to the online database, prepared the 5-minute demo, recorded the demo video (5 min 51 s, 1080p) and compressed it from 538 MB to 9.7 MB.
+* Added a **server-side double-booking check**: a PocketBase hook that runs the overlap check and the save in one transaction, with a backend integration test. It is installed on my local PocketBase and, since October 10, on the online PocketBase.
+* Locked the rules on my local PocketBase (the rule migrations had never been applied there), and transferred 6 of my 7 local reservations to the online database after a backup. One was left out on purpose, because it holds a guest's phone and email and online sign-up is open.
+
+### Why
+
+* The public web version needed a database that does not depend on my PC, and a login so that strangers cannot change the data.
+* The database rules are what actually protect the data. Hiding buttons in the app is not enough, because anyone can send requests to the API directly.
+* Keeping the address in one setting means the same code works with my local PocketBase during development and with the hosted one for the demo, and no passwords are stored in the code.
+* The feedback asked for exact setup steps, honest verification and real evidence of the overlap check, so the documentation now says what was run live, what is only covered by tests, and what is not verified.
+
+### What broke or what I got stuck on
+
+* After the sign-up release, the live site still showed the old login page. The published files were already correct, so it was most likely caching, not a broken deployment.
+* While testing on a copy of the database, I found that PocketBase itself does not stop double bookings. An overlapping reservation sent straight to the API is accepted, because the overlap check only ran in the app. My first server-side hook checked before saving, but a test with simultaneous requests showed both could still be saved. The final version does the check and the save in one transaction, and the integration test shows 0 double bookings. On October 10 it was deployed to the online PocketBase through the PocketBase Cloud portal and checked with live requests.
+* Open sign-up means anyone with the link can create an account and change the demo data. I accepted that for a class demo with made-up data and wrote down the risk.
+* The demo video is 538 MB. That is over GitHub's 100 MB file limit. I compressed it to 9.7 MB, but because it shows my webcam it will be uploaded as an unlisted video instead of being committed.
+
+### What is left
+
+* Upload the demo video and add its link to the README.
+* Run the manual reservation tests in `docs/09-reservations-and-data-integrity.md`, the Windows desktop build and the tablet width, and write down the results.
+* Close sign-up (or add admin approval) before any real guest data is used.
+
+### Verification status
+
+* `flutter analyze` reported no issues. `flutter test` passed **244** tests after the login work, **257** after sign-up, **276** after the documentation feedback and **278** after the final security work.
+* The PocketBase integration test passed 22 of 22 checks twice with the hook. Without it, 10 checks fail.
+* Checked in a browser on a copy of the database: wrong password, sign-in, reload, sign-out, sign-up with mismatched passwords, the main screens at phone and desktop width, and the conflict message.
+* Checked online on October 9, signed in with a test account: the GitHub Pages version loaded its data from the PocketBase Cloud database. Saving through the app's own forms online was not tried.
+
+### Hours spent, roughly:
+
+* Not recorded.
+
+### Next week I will:
+
+* Present the live demo and submit the project.
+* Add the video link to the README.
+* Fix anything that comes up during the presentation or submission review.
 
 ## Reflection and plan (added October 9, 2026)
 

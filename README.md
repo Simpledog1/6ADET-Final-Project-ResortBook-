@@ -7,7 +7,7 @@
 **Course:** Applications Development and Emerging Technologies (6ADET), Holy Angel University
 **Author:** [Simpledog1](https://github.com/Simpledog1)
 **Web build:** https://simpledog1.github.io/6ADET-Final-Project-ResortBook-/ — see [Web build and deployment](#web-build-and-deployment) (it needs a publicly hosted PocketBase and a login)
-**Demo video:** see [docs/05-demo-video.md](docs/05-demo-video.md)
+**Demo video:** recorded, and compressed to 9.7 MB so it is ready to upload. It is not uploaded yet, so there is no link; see [Video demonstration](#video-demonstration).
 **AI use:** built with heavy AI help: Gemini (Google) for the first version (Sept 23 – Oct 3), then Claude (Anthropic) for most of the current code, tests and docs. I set the requirements, ran and tested everything, and decided what to keep. Details in [AI-USAGE.md](AI-USAGE.md).
 
 ---
@@ -34,8 +34,8 @@ Front-desk staff and managers of small-to-medium resorts. It is an internal staf
 
 | Status | What |
 | --- | --- |
-| **Implemented and checked** | Sign in and sign up; Dashboard; Reservation List; Reservation Details; Calendar; Add and Edit Reservation with the overlap check, capacity check and pricing; Manage Resort (unit types, units, stay types, rates); phone and desktop layouts. How each was checked (run in the browser, or automated test only) is in [docs/10-testing-and-verification.md](docs/10-testing-and-verification.md). |
-| **Written but not finished or not verified** | Tablet layout (600–1023 px): it is in the code, but I have not looked at it at that width and no test covers it. Online demo: the web build is published, but it only shows data if a public PocketBase is configured ([docs/07-deployment.md](docs/07-deployment.md)); server-side overlap check: written and tried on a scratch copy, **not enabled** in any real PocketBase ([docs/09](docs/09-reservations-and-data-integrity.md)); the Windows desktop build was not re-run for these docs; the demo video is not recorded yet. |
+| **Implemented and checked** | Sign in and sign up; Dashboard; Reservation List; Reservation Details; Calendar; Add and Edit Reservation with the overlap check, capacity check and pricing; Manage Resort (unit types, units, stay types, rates); phone and desktop layouts; the online demo on GitHub Pages with a hosted PocketBase (PocketBase Cloud, checked on 2026-10-09 with a test account); a **server-side double-booking check** (PocketBase hook in `pocketbase/pb_hooks/`, tested with a backend integration test including simultaneous requests, and installed on both the online PocketBase (verified with live requests on 2026-10-10) and my local PocketBase). How each was checked (run in the browser, or automated test only) is in [docs/10-testing-and-verification.md](docs/10-testing-and-verification.md). |
+| **Written but not finished or not verified** | Tablet layout (600–1023 px): it is in the code, but I have not looked at it at that width and no test covers it. The Windows desktop build was not re-run for these docs. The demo video is compressed but not uploaded yet. |
 | **Planned or out of scope** | PDF booking receipts, real-time multi-device sync, payments, notifications, a guest-facing booking site. |
 
 ## Built with
@@ -98,7 +98,18 @@ flutter analyze
 flutter test
 ```
 
-On 2026-10-09: `flutter analyze` reports no issues and `flutter test` passes all 276 tests. The tests cover the booking, calendar, statistics, configuration and workflow rules, sign-in and sign-up, the overlap boundaries, and a check that the field names the models read and the fields `createReservation` writes exist in `pocketbase/pb_schema.json` (other save and update code is not covered by that check), plus widget tests for the main screens. They use a fake data source, so no server is needed, which also means **no test talks to a real PocketBase**. What they do not cover, and what I checked by hand, is listed in [docs/10-testing-and-verification.md](docs/10-testing-and-verification.md).
+On 2026-10-09: `flutter analyze` reports no issues and `flutter test` passes all 276 tests. The backend has a separate integration test, `pocketbase/tests/run-overlap-tests.ps1`, which starts a throwaway PocketBase with the real schema and hooks and sends real API requests (22 of 22 passed on 2026-10-09, see [docs/09](docs/09-reservations-and-data-integrity.md#5-server-side-double-booking-check)). The Flutter tests cover the booking, calendar, statistics, configuration and workflow rules, sign-in and sign-up, the overlap boundaries, and a check that the field names the models read and the fields `createReservation` writes exist in `pocketbase/pb_schema.json` (other save and update code is not covered by that check), plus widget tests for the main screens. They use a fake data source, so no server is needed, which also means **no test talks to a real PocketBase**. What they do not cover, and what I checked by hand, is listed in [docs/10-testing-and-verification.md](docs/10-testing-and-verification.md).
+
+## Video demonstration
+
+| Step | Status |
+| --- | --- |
+| Recorded | Yes, 2026-10-09: 5 min 51 s, 1920 × 1080, 30 fps, 538 MB (`ResortBook_Demo_Video.mp4`, kept locally) |
+| Compressed | Yes: `ResortBook_Demo_Video_Compressed.mp4`, **9.7 MB**, 1280 × 720, 30 fps, H.264 + AAC 96 kbps, same length. I checked frames at the start, middle and end for readable text and audio in each part. |
+| Ready to upload | Yes |
+| Uploaded and publicly accessible | **No.** There is no link yet. |
+
+Neither video file is committed to this repository. The original is over GitHub's 100 MB limit and is listed in `.gitignore`. The compressed file would fit, but the recording includes my webcam, so I plan to host it as an unlisted video (for example on YouTube) or as a GitHub Release attachment and put the link here. What the video is meant to cover is in [docs/05-demo-video.md](docs/05-demo-video.md).
 
 ## Screenshots
 
@@ -153,12 +164,12 @@ Local PocketBase  http://127.0.0.1:8090         GitHub Pages (Flutter web)
 - **Login and sign-up:** the app opens on a Sign In page with a **Create one** link to a Create Account page (name, email, password, confirm password). After creating an account you return to Sign In and log in. The session is saved in the browser, so a reload keeps you signed in until you use **Sign out**.
 - **API rules:** the data is protected by PocketBase itself, not just the UI: without a login the API returns no data and rejects writes (see [Security and privacy](docs/06-security-and-privacy.md)).
 - **Configuration:** the PocketBase address is `POCKETBASE_URL` (a build-time `--dart-define`, default `http://127.0.0.1:8090`; the GitHub workflow takes it from the repository variable `POCKETBASE_URL`). It is not a secret. Never commit the PocketBase admin password, `pb_data/`, or `.env` files.
-- **Hosting PocketBase publicly** is a manual step that needs your own hosting account: see [docs/07-deployment.md](docs/07-deployment.md). Until a public PocketBase URL is configured, the hosted web build cannot reach any server.
+- **Online database:** the GitHub Pages version uses a PocketBase instance I set up on PocketBase Cloud. Its address comes from the repository variable `POCKETBASE_URL`. On 2026-10-09 I checked that, signed in with a test account, the online app loads its data from there. The demo records were added through the API in that session, so saving through the app's own forms online has not been tried. The server-side overlap check is installed there (since 2026-10-10). Sign-up is open on it, so it should only hold made-up demo data (see [docs/09](docs/09-reservations-and-data-integrity.md)). To host your own, see [docs/07-deployment.md](docs/07-deployment.md).
 
 ## Known limitations
 
 - Simple authentication only: one shared kind of account (no roles or password reset); accounts are managed in the PocketBase admin UI. Every signed-in user can change all data.
-- **The double-booking check runs only in the Flutter app.** PocketBase does not check it: I confirmed on a copy of the database that an overlapping reservation sent directly to the API is accepted, and two people saving the same slot at the same moment are not protected. A server-side hook is written and tried out on a scratch copy but is **not enabled** ([docs/09](docs/09-reservations-and-data-integrity.md)).
+- **Server-side double-booking check:** the hook in `pocketbase/pb_hooks/` makes PocketBase itself reject overlapping reservations, including simultaneous requests, because the check and the save run in one transaction. It only works on a PocketBase that has the file. It is installed on the online PocketBase (deployed through the PocketBase Cloud portal on 2026-10-10 and checked with live requests) and on my local PocketBase. Bookings that already overlap are not removed by it ([docs/09](docs/09-reservations-and-data-integrity.md)).
 - If two people edit the same reservation at the same time, the last save wins.
 - Completing a stay early doesn't shorten the booked time window; the unit stays blocked until the booked end time.
 - No payments, notifications, housekeeping or guest-facing online booking (out of scope).

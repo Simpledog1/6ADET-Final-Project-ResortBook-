@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:final_project/logic/booking_logic.dart';
 import 'package:final_project/models/reservation.dart';
+import 'package:final_project/models/stay_type.dart';
 
 Reservation _booking({
   String id = 'r1',
@@ -188,5 +189,66 @@ void main() {
       );
       expect(conflicts, isEmpty);
     });
+  });
+
+  group('stay windows from stay types', () {
+    const nightTour = StayType(
+      id: 'st_night',
+      name: 'Night Tour',
+      checkInTime: '19:00',
+      checkOutTime: '06:00',
+      endsNextDay: true,
+      allowMultipleNights: false,
+      pricingBasis: PricingBasis.perStay,
+    );
+    const overnight = StayType(
+      id: 'st_overnight',
+      name: 'Overnight',
+      checkInTime: '14:00',
+      checkOutTime: '12:00',
+      endsNextDay: true,
+      allowMultipleNights: true,
+      pricingBasis: PricingBasis.perNight,
+    );
+
+    test('cross-midnight: a Night Tour blocks an early-morning booking', () {
+      final night = BookingLogic.computeWindow(
+        stayType: nightTour,
+        date: DateTime(2026, 6, 15),
+      )!; // June 15 7:00 PM -> June 16 6:00 AM
+      final conflicts = BookingLogic.findConflicts(
+        unitId: 'unit_a',
+        window: night,
+        existing: [
+          _booking(
+            start: DateTime(2026, 6, 16, 5),
+            end: DateTime(2026, 6, 16, 8),
+          ),
+        ],
+      );
+      expect(conflicts, hasLength(1));
+    });
+
+    test(
+      'multi-night: a 3-night stay blocks a booking on its middle night',
+      () {
+        final stay = BookingLogic.computeWindow(
+          stayType: overnight,
+          date: DateTime(2026, 6, 15),
+          nights: 3,
+        )!; // June 15 2:00 PM -> June 18 12:00 PM
+        final conflicts = BookingLogic.findConflicts(
+          unitId: 'unit_a',
+          window: stay,
+          existing: [
+            _booking(
+              start: DateTime(2026, 6, 16, 14),
+              end: DateTime(2026, 6, 17, 12),
+            ),
+          ],
+        );
+        expect(conflicts, hasLength(1));
+      },
+    );
   });
 }

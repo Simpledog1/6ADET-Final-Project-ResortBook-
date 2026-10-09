@@ -45,7 +45,8 @@ When the server is up you have a URL such as `https://your-name.example.com`. Th
 1. Open `https://YOUR-POCKETBASE-URL/_/` and create the superuser (the admin). Keep that password to yourself; it never goes into the app or GitHub.
 2. Admin UI > **Settings > Import collections > Load from JSON file** and choose `pocketbase/pb_schema.json`. Review and confirm. This creates `users` (self sign-up allowed), `unit_types`, `units`, `stay_types`, `rates` and `reservations`, each with the production API rules.
 3. Create the demo account either with **Create one** on the app's Sign In page, or in the admin UI under **Collections > users > New record**. Anyone with the link can also create an account; to stop that, set the `users` **Create rule** to locked (see `docs/06-security-and-privacy.md`).
-4. Optional: add your demo data (Cottage and Villa unit types, a few units, stay types and rates) through the app's **Manage Resort** after signing in.
+4. Turn on the server-side double-booking check. In the PocketBase Cloud portal, open the instance's **Hooks** tab, click **New Hook**, name it `reservation_overlap.pb.js`, paste the contents of `pocketbase/pb_hooks/reservation_overlap.pb.js`, then **Save** and **Deploy**. On a self-hosted PocketBase, copy the file into the `pb_hooks` folder next to the executable instead. Then check it: an overlapping booking sent to the API must be rejected with "This unit is already booked for part of that time." (see `docs/09-reservations-and-data-integrity.md`).
+5. Optional: add your demo data (Cottage and Villa unit types, a few units, stay types and rates) through the app's **Manage Resort** after signing in.
 
 PocketBase allows requests from any origin by default, so GitHub Pages can call it without extra CORS setup. (If you restrict origins at your host, allow `https://simpledog1.github.io`.)
 

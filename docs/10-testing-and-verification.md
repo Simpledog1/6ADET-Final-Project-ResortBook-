@@ -35,6 +35,12 @@ What these tests **do not** cover:
 - The tests do not check how the app looks. For that, use the checks below.
 - On the day I wrote the Week 3 report, one test printed a PocketBase connection error and still passed. That message comes from a screen reaching the real client in the test environment, and it is not a failing test.
 
+## Backend integration test (PocketBase)
+
+The Flutter tests above use a fake data source, so they cannot prove anything about the server. The double-booking check on the server has its own test, `pocketbase/tests/run-overlap-tests.ps1`. It runs a throwaway PocketBase with the real schema and hooks, and sends real API requests, including simultaneous ones.
+
+On 2026-10-09 it gave **22 of 22 passed** (run twice) with the hook. **Without** the hook, it gave 12 passed and 10 failed, which shows the test really detects double bookings. The same file is deployed on the online PocketBase. On 2026-10-10, live checks against it passed 16 of 16, including simultaneous requests. Details are in [09-reservations-and-data-integrity.md](09-reservations-and-data-integrity.md#5-server-side-double-booking-check).
+
 ## What you should see
 
 Each row says how to look at it yourself and what is expected. The last column says how I know. **Live** means I ran the web version of the current code in Chrome on 2026-10-06 or 2026-10-09 against PocketBase 0.40.4 (web, not the Windows desktop build). The screenshots are in `docs/assets/App Screenshots/`.
@@ -49,11 +55,11 @@ Each row says how to look at it yourself and what is expected. The last column s
 | Dashboard | Open the Dashboard | Desktop: four stat cards, upcoming reservations, recently added, quick actions. Phone: list of upcoming reservations and four buttons (Add Reservation, View Reservations, View Calendar, Manage Resort). | Live |
 | Reservation List | Open Reservations | Phone: searchable list with status badges. Desktop: table with status filters. | Live |
 | Calendar | Open Calendar | Month view with dots (phone) or bars (desktop) and a panel for the selected day | Live |
-| Add Reservation | Fill the form with two guests, Overnight, a unit and dates | Stay window and total price appear. Saving a booking that overlaps shows **Date Conflict Detected** and saves nothing. | Conflict message live (desktop and phone). Successful save only by test. |
+| Add Reservation | Fill the form with two guests, Overnight, a unit and dates | Stay window and total price appear. Saving a booking that overlaps shows **Date Conflict Detected** and saves nothing. Saving a free slot shows "Reservation saved" and the total. | Conflict message live (desktop and phone). Successful save live on 2026-10-09 (desktop, against a copy of the database with the server hook). |
 | Manage Resort | Open Manage Resort, Unit Types, Units, Stay Types, Rates | Cards or tables for each, with counts and a setup checklist | Live |
 | Reservation Details, Edit, Check In, Complete, Cancel, Restore | Open a reservation | Details with action buttons that depend on its status | **Tests only. Not run live in these sessions. Please run them yourself (checklist below).** |
 | Windows desktop app | `flutter run -d windows` | Same as the desktop layout, inside a DevicePreview frame in debug | **Not verified by me.** I used it earlier for the screenshot export (Week 2), but did not rerun it for these docs. |
-| Online demo | Open the GitHub Pages link | Sign-in page. Data appears only if a public PocketBase URL was configured at build time. | The page loads. The data connection depends on the hosting setup in [07-deployment.md](07-deployment.md) and is **not verified** here. |
+| Online demo | Open the GitHub Pages link and sign in | Sign-in page, then the app with data from the hosted PocketBase | Live on 2026-10-09: signed in with a test account, the app loaded its data from the PocketBase Cloud database. The demo records were added through the API in that signed-in session, so saving through the app's forms online is **not verified**. |
 
 ## Screenshots: what is what
 

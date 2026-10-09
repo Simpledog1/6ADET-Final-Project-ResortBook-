@@ -66,6 +66,8 @@ Open <http://127.0.0.1:8090/_/> and create the superuser (the admin) when asked.
 - **A new, empty PocketBase (recommended):** admin UI > **Settings > Import collections > Load from JSON file** > choose `pocketbase/pb_schema.json` > confirm. This creates `users` (login accounts), `unit_types`, `units`, `stay_types`, `rates` and `reservations` with all fields and the API rules. On 2026-10-06 I tested importing an **earlier version** of this file into an empty PocketBase 0.40.4 and it worked. The file was changed afterwards (the `users` create rule now allows sign-up), and I have **not** re-tested importing the current file.
 - **My existing database only:** copy the files in `pocketbase/migrations/` into a `pb_migrations/` folder next to the executable and restart. These migrations upgrade the original `rooms` collection by its internal id, so on a fresh install they do not work.
 
+Then copy the `pocketbase/pb_hooks/` folder next to the PocketBase executable (so there is a `pb_hooks` folder beside `pocketbase.exe`) and restart PocketBase. This turns on the server-side double-booking check (see [09](09-reservations-and-data-integrity.md#5-server-side-double-booking-check)).
+
 Then create a login (admin UI > Collections > `users` > New record, or use **Create one** on the app's sign-in page), and add your resort setup in the app under **Manage Resort**: unit types, stay types, units, then a rate for every unit type and stay type pair. Without a rate the app refuses to save a reservation.
 
 ### 3. Run the app
@@ -166,6 +168,7 @@ The test `test/schema_models_test.dart` checks two things against this schema fi
 | `flutter pub get` fails with a network error | Packages could not be downloaded | Retry on a better network. Once it has succeeded one time, `flutter pub get --offline` works from the local cache. |
 | App shows "Cannot reach PocketBase" | PocketBase is not running, or the app points at another address | Start `pocketbase serve`, and check <http://127.0.0.1:8090/api/health> in a browser. |
 | Sign-in works but screens are empty, or saving fails with 400/403 | The collections or API rules are missing or different | Import `pocketbase/pb_schema.json` again on a fresh instance, and check you are signed in. |
+| Saving shows "This unit is already booked for part of that time." | The server-side check found an overlapping booking, for example one saved by someone else a moment earlier | Reload the list or calendar, then pick another unit or time. |
 | `flutter test` prints a PocketBase connection error | A widget test reached the real client instead of the fake one | The tests should still pass. Report the test name if one fails. The server is not needed for `flutter test`. |
 
 ## When the internet is unreliable

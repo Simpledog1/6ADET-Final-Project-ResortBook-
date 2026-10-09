@@ -233,6 +233,215 @@ I reviewed the design and tested the resulting functionality. I also required ex
 
 ---
 
+## 1.12 October 5 — Web viewport fix, documentation and screenshots
+
+**Tool:** Claude
+
+**What I asked:**
+I asked Claude to make the web build fill the whole browser window instead of showing a phone frame, fix broken image links in the documentation, help me document my AI use and code contribution, and replace the Figma images in the README with screenshots of the running app.
+
+**What AI gave me:**
+Claude turned DevicePreview off for web and release builds, fixed the documentation links and web app name, drafted the "Who Wrote What" material, and prepared the README screenshot section.
+
+**What I kept/changed:**
+I checked the web build and the screenshots, and I decided what to say about my own contribution. The screenshot export code it refers to is my own work (section 3.1).
+
+**Commits:**
+`c77762c`
+`689a638`
+`6676888`
+`f377c5a`
+
+---
+
+## 1.13 October 6 — Login, PocketBase configuration and database rules
+
+**Tool:** Claude
+
+**What I asked:**
+I asked Claude to fix the web viewport, separate the development and production PocketBase addresses, prepare PocketBase for a public host, add a login, and lock the database rules so people could not change the data without signing in. I required no secrets in the code and no breaking of the existing screens.
+
+**What AI gave me:**
+Claude added the login screen, session restore and sign-out, the `POCKETBASE_URL` setting, the migration that locks the API rules, the exported `pb_schema.json`, the deployment guide (`docs/07-deployment.md`) and the authentication tests. It tested the rules on a copy of my database, not on my real data.
+
+**What I kept/changed:**
+I reviewed the change and approved the commit. I set up the online PocketBase myself (see 1.14) and created the accounts.
+
+**Commit:**
+`dd302fe`
+
+---
+
+## 1.14 October 6 — Choosing where to host PocketBase
+
+**Tool:** Claude
+
+**What I asked:**
+I asked Claude to compare free hosting options for PocketBase (Google Cloud, Oracle Cloud, PocketBase Cloud, Render, Fly.io and others) using current official pricing pages.
+
+**What AI gave me:**
+A comparison and a recommendation (PocketBase Cloud's free plan, with Oracle Cloud as the fallback) and a deployment plan.
+
+**What I kept/changed:**
+I chose PocketBase Cloud, created the instance and connected the GitHub Pages build to it.
+
+**Commit:**
+None (research only).
+
+---
+
+## 1.15 October 6 — Create Account (sign-up)
+
+**Tool:** Claude
+
+**What I asked:**
+I asked for a Create Account page (name, email, password, confirm password) that matches the design, plus the database rule change needed for self sign-up, without opening the resort data to people who are not signed in.
+
+**What AI gave me:**
+The sign-up screen, the validation rules, the `users` rule migration, an updated `pb_schema.json` and tests. It also pointed out that with open sign-up any new account can change the resort data.
+
+**What I kept/changed:**
+I accepted open sign-up for the class demo with made-up data, knowing the risk, which is documented in `docs/09-reservations-and-data-integrity.md`.
+
+**Commit:**
+`cfbf65f` (originally `b192d5a`, see 1.19)
+
+---
+
+## 1.16 October 6 — New README screenshots and a deployment check
+
+**Tool:** Claude
+
+**What I asked:**
+I asked Claude to replace the README screenshots with the current app, for both desktop and phone, using made-up data only. I also asked it to find out why the live site still showed the old login page.
+
+**What AI gave me:**
+Claude captured the screenshots from a web build running against a copy of my database, with the guests renamed to made-up names. It also found that the published files were already correct, so the old page was most likely caching.
+
+**What I kept/changed:**
+I reviewed the screenshots before they were committed.
+
+**Commit:**
+`92259fe` (originally `66a5acd`, see 1.19)
+
+---
+
+## 1.17 October 9 — Professor feedback m8a1–m8a6
+
+**Tool:** Claude
+
+**What I asked:**
+I asked Claude to go through the feedback for m8a1 to m8a6 and fix the documentation:
+
+* setup and versions
+* honest verification status
+* the reservation workflow
+* overlap edge cases
+* client-side versus server-side validation
+* conflict screenshots
+* reflections in the weekly reports
+
+I then asked it to audit its own changes before I committed them.
+
+**What AI gave me:**
+
+* new documentation pages `docs/08`, `docs/09` and `docs/10`;
+* additions to the existing docs and weekly reports;
+* 11 overlap boundary tests and a schema/model test;
+* two conflict screenshots captured from the running app;
+* a server-side overlap hook, tried only on a copy of the database and **not enabled**. Later that day it was replaced by the transaction-based version described in 1.20.
+
+It also showed on a copy of the database that a direct API request can create a double booking.
+
+**What I kept/changed:**
+The audit found claims that went further than the evidence, listed in 2.4. I had them corrected before committing.
+
+**Commit:**
+`e8836e4`
+
+---
+
+## 1.18 October 9 — Demo preparation
+
+**Tool:** Claude
+
+**What I asked:**
+I asked for a 5-minute demo script and flow, a simple intro, and example data in the online database so I did not have to set everything up by hand.
+
+**What AI gave me:**
+
+* The script and intro.
+* The demo data: after I signed in to the online version with my test account, Claude added unit types, units, stay types, rates and three made-up reservations through the PocketBase API using that session. It did not type my password.
+
+**What I kept/changed:**
+I recorded the demo video myself. An extra demo-guide page that I did not ask for was committed and then reverted (see 2.5).
+
+**Commits:**
+`0e77f4e` (added), `5581800` (reverted). The database changes are not in Git.
+
+---
+
+## 1.19 October 9 — Commit attribution
+
+Commits made with Claude Code on October 6 originally ended with a line crediting Claude as a co-author:
+
+* `b192d5a`
+* `66a5acd`
+
+On October 9 I removed only those lines. The file changes, authors and dates stayed the same, and the commits became `cfbf65f` and `92259fe`. Claude's help with those commits is still disclosed in 1.15 and 1.16 of this document. Removing the line did not change who did the work.
+
+## 1.20 October 9 — Video compression and server-side double-booking fix
+
+**Tool:** Claude
+
+**What I asked:**
+I asked Claude to compress my demo video below GitHub's 100 MB limit without touching the original. I also asked it to audit whether ResortBook could accept overlapping reservations through the UI, a direct API request, simultaneous requests, editing, restoring and status changes, and to fix the backend if needed.
+
+**What AI gave me:**
+
+* **FFmpeg:** installed with my permission; the video compressed from 538 MB to 9.7 MB (720p) and checked for readable frames and audio.
+* **The audit:** it found that a direct API request and simultaneous requests could create double bookings.
+* **The fix:** a PocketBase hook in `pocketbase/pb_hooks/` that runs the overlap check and the save in one database transaction.
+* **The tests:** a backend integration test (`pocketbase/tests/run-overlap-tests.ps1`) and two extra unit tests.
+* **Installing it:** it installed the hook on my local PocketBase after backing up `pb_data`.
+
+**What I kept/changed:**
+I approved installing FFmpeg and putting the hook on my local PocketBase. I still have to upload the video. The online deployment is in 1.21.
+
+**Commit:**
+None yet. The changes are in the working tree for my review.
+
+## 1.21 October 10 — Online deployment and data transfer
+
+**Tool:** Claude
+
+**What I asked:**
+I asked Claude to:
+
+* lock my local PocketBase;
+* deploy the double-booking hook to the online PocketBase;
+* move my local reservations online without losing or duplicating data;
+* then finish the documentation and push everything.
+
+**What AI gave me:**
+
+* **Local PocketBase:** applied the two missing rule migrations, after a backup and a dry run on a copy, and confirmed the data was unchanged.
+* **Online PocketBase:** I signed in myself to the PocketBase admin and the PocketBase Cloud portal in the browser; Claude never typed my passwords. Using those sessions, Claude:
+  * made a full online backup;
+  * confirmed the online rules already matched the repository;
+  * pasted the hook into the portal's Hooks editor and deployed it;
+  * ran live tests and deleted the test bookings afterwards;
+  * imported 6 local reservations with their original IDs and checked the relationships and overlaps.
+* **Hook file:** merged into one file so the portal could load it.
+
+**What I kept/changed:**
+I decided to leave out one local reservation that contains a guest's phone and email, because online sign-up is open. I reviewed the changes before they were committed.
+
+**Commit:**
+The commit that adds this entry.
+
+---
+
 # 2. Where AI Got It Wrong
 
 AI was useful throughout the project, but it was not always correct. I tested the generated code rather than assuming it worked.
@@ -283,6 +492,70 @@ The test was corrected to scroll until the control was visible and then interact
 
 **Final QA commit:**
 `6ed818e`
+
+---
+
+## 2.4 Documentation claimed more than had been checked
+
+**What AI gave me:**
+The first version of the m8a documentation said:
+
+* the tablet layout had been checked;
+* the schema test checked every field the code reads or writes;
+* importing the current `pb_schema.json` had been tested.
+
+**What was wrong:**
+When I asked Claude to audit its own changes, it found that none of these were fully supported:
+
+* nobody had looked at the tablet width;
+* the test covers only the model reads and `createReservation`;
+* the import was tested before the sign-up rule changed.
+
+**What I did instead:**
+I had the documentation corrected to say what was and was not verified before committing it.
+
+**Commit:**
+`e8836e4`
+
+---
+
+## 2.5 Demo data put in the wrong place
+
+**What AI gave me:**
+When I asked for example data in my online database, Claude wrote a demo-setup page and pushed it to GitHub instead.
+
+**What was wrong:**
+I wanted the data in the database, not another document.
+
+**What I did instead:**
+I had the commit reverted, then Claude added the data to the online database while I was signed in.
+
+**Commits:**
+`0e77f4e`, reverted by `5581800`
+
+## 2.6 The first server-side hook was not safe against simultaneous requests
+
+**What AI gave me:**
+The first server-side hook (1.17) checked for an overlap before the save, and a small test of simultaneous requests passed.
+
+**What was wrong:**
+When the check was slowed down on purpose in a later test, two simultaneous requests both passed the check and both bookings were saved. The earlier test only passed because of timing.
+
+**What I did instead:**
+The hook was rewritten so the check and the save happen in one database transaction. The same slowed-down test then gave 0 double bookings (1.20).
+
+---
+
+## 2.7 A test request created a record in my local database
+
+**What AI gave me:**
+While checking that my local PocketBase started with the new hook, Claude sent a request that was not signed in, to see whether it would be refused.
+
+**What was wrong:**
+My local database still had the original open rules, so the request was accepted and created one empty reservation.
+
+**What I did instead:**
+That single empty record was deleted straight away. The reservation list was then compared with the backup taken just before, and both had the same 7 reservations. On October 10 the rule-locking migrations were applied to my local PocketBase, after a backup and a dry run on a copy. After that, signed-out requests could no longer read or change data (`docs/09`, section 4).
 
 ---
 
@@ -337,6 +610,15 @@ Examples include:
 * deciding reservation workflow rules
 * preserving existing PocketBase data
 * deciding which AI-generated changes needed correction
+
+### Week 4 work I did myself (October 6–9)
+
+* chose the hosting option and set up the online PocketBase on PocketBase Cloud
+* created the user accounts, including the test account used for the demo
+* decided to accept open sign-up for the class demo and to keep the server-side overlap hook disabled for now
+* reviewed the professor's feedback and asked for the audit before committing the documentation
+* recorded the demo video
+* approved installing FFmpeg and adding the double-booking hook to my local PocketBase
 
 ### Personally authored Dart implementation
 
@@ -406,6 +688,8 @@ I am not claiming the following AI-generated areas as personally authored code:
 * the original reservation/room model mapping code
 * the later Claude-generated redesign and management features
 * the later Claude-generated configurable unit/stay functionality
+* the Claude-generated login, sign-up, configuration and database-rule work from October 6
+* the Claude-generated tests and documentation from October 6 and October 9
 
 The reason is that the Git history does not provide sufficient evidence that I personally wrote those sections.
 
@@ -416,6 +700,8 @@ The reason is that the Git history does not provide sufficient evidence that I p
 The repository history shows that ResortBook contains substantial AI-generated code.
 
 The strict Git-supported estimate of personally authored surviving Dart code is approximately **20 lines**, or about **0.16% of the current `lib/` code**.
+
+*Update, 9 October 2026:* `lib/` has grown to 15,689 lines of Dart (counted with `wc -l`, which includes blank lines and comments), so the same 20 lines are now about **0.13%**. All of the code added in Week 4 (login, sign-up, configuration and tests) was generated with Claude, so it does not add to my authored share.
 
 A more generous interpretation that includes mixed theme/spacing work is still well below 20%.
 
