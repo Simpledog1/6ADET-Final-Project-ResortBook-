@@ -8,10 +8,9 @@
 2. Sign in, then the dashboard on desktop and on a phone-width window.
 3. Manage Resort: show a unit type, a unit, a stay type and a rate.
 4. Add a reservation step by step, and show the price.
-5. Try to add an overlapping reservation and show the **Date Conflict Detected** message.
-6. Reservation List, Reservation Details, then Check In, Complete, Cancel and Restore.
-7. Calendar.
-8. Say honestly what is not done: the double-booking check is only in the app (see [09](09-reservations-and-data-integrity.md)).
+5. Reservation List, Reservation Details, then Check In, Complete, Cancel and Restore.
+6. Calendar.
+7. Say honestly what is not done: the double-booking check is only in the app (see [09](09-reservations-and-data-integrity.md)).
 
 **File:** `demo.mp4` in this folder, or the hosted link (see below)
 **Length:** aim for 3 to 5 minutes
