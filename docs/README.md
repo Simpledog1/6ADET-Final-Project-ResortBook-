@@ -17,7 +17,6 @@ folder is half of what gets read.
 | [08-setup-and-troubleshooting.md](08-setup-and-troubleshooting.md) | versions, setup, exact collections and fields, troubleshooting |
 | [09-reservations-and-data-integrity.md](09-reservations-and-data-integrity.md) | reservation steps, overlap rule, edge cases, server-side validation |
 | [10-testing-and-verification.md](10-testing-and-verification.md) | test results, what was verified, screenshot inventory |
-| [11-demo-setup.md](11-demo-setup.md) | example demo data and live demo steps |
 | `assets/` | screenshots, wireframe photos, diagrams |
 
 Two rules:

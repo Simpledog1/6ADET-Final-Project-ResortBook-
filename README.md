@@ -177,7 +177,6 @@ Local PocketBase  http://127.0.0.1:8090         GitHub Pages (Flutter web)
 | [Setup and troubleshooting](docs/08-setup-and-troubleshooting.md) | versions, installing, exact collections and fields, fixing failed setups |
 | [Reservations and data integrity](docs/09-reservations-and-data-integrity.md) | how a reservation is made, the overlap rule and edge cases, client vs server validation, test checklist |
 | [Testing and verification](docs/10-testing-and-verification.md) | test results, what was checked live and what was not, screenshot inventory |
-| [Demo setup](docs/11-demo-setup.md) | example data to enter before a live demo, and what to do during it |
 | [Code overview](lib/README.md) | how the `lib/` folder is organised |
 
 ## AI use
